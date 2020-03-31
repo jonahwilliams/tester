@@ -1,0 +1,7 @@
+.dart_tool/
+*.dill
+.idea/
+.packages
+test_project/main.dart
+
+!test_project/.packages
