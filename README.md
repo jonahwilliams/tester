@@ -3,7 +3,8 @@
 An experimental test runner. To run:
 
 ```
-dart --observe --no-pause-isolates-on-unhandled-exceptions bin/main.dart --flutter-root=path/to/flutter_root
+dart --observe --no-pause-isolates-on-unhandled-exceptions bin/main.dart --flutter-root=/path/to/flutter  --project-root=/path/to/tester/test_project/
+
 > Observatory listening on http://127.0.0.1:8181/slHh-84SqF8=/
 > READY.
 ```
