@@ -9,6 +9,7 @@ import 'package:file/file.dart';
 import 'package:file/local.dart';
 import 'package:platform/platform.dart';
 import 'package:process/process.dart';
+import 'package:tester/src/config.dart';
 import 'package:tester/tester.dart';
 
 final argParser = ArgParser()
@@ -36,7 +37,7 @@ Future<void> main(List<String> args) async {
 
   List<String> testFiles;
   if (argResults.wasParsed('test')) {
-    testFiles = argResults['test'];
+    testFiles = argResults['test'] as List<String>;
   } else {
     testFiles = fileSystem
         .directory(argResults['project-root'])
@@ -45,7 +46,7 @@ Future<void> main(List<String> args) async {
         .whereType<File>()
         .where((file) => file.path.endsWith('_test.dart'))
         .map((file) => fileSystem.path
-            .relative(file.path, from: argResults['project-root']))
+            .relative(file.path, from: argResults['project-root'] as String))
         .toList();
   }
   runApplication(

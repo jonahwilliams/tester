@@ -8,8 +8,11 @@ void testThatOneIsOne() {
   }
 }
 
-Future<String> testFoo() async {
-  return 'asdsaad';
+Future<void> testFoo() async {
+  await Future<void>.delayed(const Duration(milliseconds: 5));
+  if ('asdsaad'.isEmpty) {
+    throw Exception('');
+  }
 }
 
 void testSomethingElse() {
