@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:tester/src/runner.dart';
@@ -22,19 +23,23 @@ class TestIsolate {
   vm_service.IsolateRef _testIsolateRef;
   vm_service.VmService _vmService;
   StreamSubscription<void> _extensionSubscription;
+  StreamSubscription<void> _logSubscription;
 
   /// Start the test isolate.
-  Future<void> start(String entrypoint, void Function() onExit) async {
-    var serviceUrl = await _testRunner.start(entrypoint, onExit);
-    var websocketUrl = serviceUrl.replace(scheme: 'ws').toString() + 'ws';
+  Future<void> start(Uri entrypoint, void Function() onExit) async {
+    var launchResult = await _testRunner.start(entrypoint, onExit);
+    var websocketUrl =
+        launchResult.serviceUri.replace(scheme: 'ws').toString() + 'ws';
     _vmService = await vm_service.vmServiceConnectUri(websocketUrl);
 
-    // TODO: support multiple test isolates using the same VM.
     var vm = await _vmService.getVM();
-    _testIsolateRef = vm.isolates.single;
+    _testIsolateRef = vm.isolates
+        .firstWhere((element) => element.name == launchResult.isolateName);
 
     await _reloadLibraries();
     await _vmService.streamListen('Extension');
+    await _vmService.streamListen('Stdout');
+
     _extensionSubscription = _vmService.onExtensionEvent.listen((event) {
       var data = event.extensionData.data;
       var testName = data['test'] as String;
@@ -44,11 +49,17 @@ class TestIsolate {
       }
       completer.complete(data);
     });
+
+    _logSubscription = _vmService.onStdoutEvent.listen((event) {
+      var message = utf8.decode(base64.decode(event.bytes));
+      print(message);
+    });
   }
 
   /// Tear down the test isolate.
   FutureOr<void> dispose() {
     _extensionSubscription.cancel();
+    _logSubscription.cancel();
     _vmService.dispose();
     return _testRunner.dispose();
   }
@@ -60,9 +71,16 @@ class TestIsolate {
     var controller = StreamController<TestResult>();
     var pending = <Future<void>>[];
     for (var libraryEntry in _libraries.entries) {
+      if (!libraryEntry.key.endsWith('_test.dart')) {
+        continue;
+      }
       for (var functionRef in libraryEntry.value.functions) {
+        if (!functionRef.isStatic) {
+          continue;
+        }
         if (functionRef.name.startsWith('test')) {
-          pending.add(runTest(functionRef.name, libraryEntry.key).then((result) {
+          pending
+              .add(runTest(functionRef.name, libraryEntry.key).then((result) {
             controller.add(result);
           }));
         }
@@ -91,11 +109,22 @@ class TestIsolate {
 
     var completer =
         _pendingTests[testName] = Completer<Map<dynamic, dynamic>>();
-    await _vmService.evaluate(
-      _testIsolateRef.id,
-      _mainLibrary.id,
-      'executeTest($testName, "$testName")',
-    );
+    try {
+      await _vmService.evaluate(
+        _testIsolateRef.id,
+        _mainLibrary.id,
+        'executeTest($testName, "$testName")',
+      );
+    } on vm_service.RPCError catch (err, st) {
+      return TestResult(
+        testFile: libraryUri,
+        testName: '',
+        passed: false,
+        timeout: false,
+        errorMessage: err.toString(),
+        stackTrace: st.toString(),
+      );
+    }
 
     return TestResult.fromMessage(
       await completer.future,

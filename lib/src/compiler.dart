@@ -17,29 +17,31 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
 
-Future<void> executeTest(dynamic testFn, String name) async {
-  var passed = false;
-  var timeout = false;
-  dynamic error;
-  dynamic stackTrace;
-  try {
-    await Future(testFn)
-      .timeout(const Duration(seconds: 15));
-    passed = true;
-  } on TimeoutException {
-    timeout = true;
-  } catch (err, st) {
-    error = err;
-    stackTrace = st;
-  } finally {
-    postEvent('testResult', {
-      'test': name,
-      'passed': passed,
-      'timeout': timeout,
-      'error': error?.toString(),
-      'stackTrace': stackTrace?.toString(),
-    });
-  }
+Future<void> executeTest(dynamic testFn, String name) {
+  runZoned(() async {
+    var passed = false;
+    var timeout = false;
+    dynamic error;
+    dynamic stackTrace;
+    try {
+      await Future(testFn)
+        .timeout(const Duration(seconds: 15));
+      passed = true;
+    } on TimeoutException {
+      timeout = true;
+    } catch (err, st) {
+      error = err;
+      stackTrace = st;
+    } finally {
+      postEvent('testResult', {
+        'test': name,
+        'passed': passed,
+        'timeout': timeout,
+        'error': error?.toString(),
+        'stackTrace': stackTrace?.toString(),
+      });
+    }
+  }, zoneValues: {#test.declarer: null});
 }
 
 Future<void> main() {
@@ -120,10 +122,6 @@ class Compiler {
 
   Future<Uri> recompile() async {
     _stdoutHandler.reset();
-    var pendingResult = _stdoutHandler.compilerOutput.future;
-    var id = Uuid().v4();
-    _frontendServer.stdin.writeln('recompile ${_mainFile.absolute.uri} $id');
-
     var invalidated = await _projectFileInvalidator.findInvalidated(
       lastCompiled: _lastCompiledTime,
       urisToMonitor: _dependencies,
@@ -132,6 +130,13 @@ class Compiler {
           .childFile('.packages')
           .path,
     );
+    if (invalidated.isEmpty) {
+      return null;
+    }
+    var pendingResult = _stdoutHandler.compilerOutput.future;
+    var id = Uuid().v4();
+    _frontendServer.stdin.writeln('recompile ${_mainFile.absolute.uri} $id');
+
     for (var uri in invalidated) {
       _frontendServer.stdin.writeln(uri.toString());
     }

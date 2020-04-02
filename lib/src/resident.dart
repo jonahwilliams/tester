@@ -33,13 +33,11 @@ class Resident {
   /// Recompile the tests and run all.
   Future<void> rerun() async {
     var result = await _compiler.recompile();
-    if (result == null) {
-      return;
+    if (result != null) {
+      await _testIsolate.reload(result);
     }
-    await _testIsolate.reload(result);
-    // TODO: only erase output from the last test.
-    _console.clearScreen();
     await for (var testResult in _testIsolate.runAllTests()) {
+      _console.eraseLine();
       var humanFileName = _fileSystem.path.relative(
         Uri.parse(testResult.testFile).toFilePath(),
         from: _config.workspacePath,

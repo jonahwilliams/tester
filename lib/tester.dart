@@ -31,13 +31,9 @@ void runApplication({
   }
 
   // Step 3. Load test isolate.
-  var vmTestRunner = VmTestRunner(
-    fileSystem: fileSystem,
-    processManager: processManager,
-    dartSdkPath: config.sdkRoot,
-  );
+  var vmTestRunner = VmTestRunner();
   var testIsolate = TestIsolate(testRunner: vmTestRunner);
-  await testIsolate.start(result.toString(), () {
+  await testIsolate.start(result, () {
     exit(1);
   });
 
