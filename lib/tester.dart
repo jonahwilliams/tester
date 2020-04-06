@@ -24,6 +24,7 @@ void runApplication({
     fileSystem: fileSystem,
     config: config,
     processManager: processManager,
+    compilerMode: config.targetPlatform,
   );
   var result = await compiler.start();
   if (result == null) {
@@ -31,15 +32,32 @@ void runApplication({
   }
 
   // Step 3. Load test isolate.
-  var vmTestRunner = VmTestRunner();
-  var testIsolate = TestIsolate(testRunner: vmTestRunner);
+  TestRunner testRunner;
+  switch (config.targetPlatform) {
+    case TargetPlatform.dart:
+      testRunner = VmTestRunner();
+      break;
+    case TargetPlatform.flutter:
+      testRunner = FlutterTestRunner(
+        flutterTesterPath: config.flutterTesterPath,
+        processManager: processManager
+      );
+      break;
+    case TargetPlatform.web:
+      throw UnsupportedError('web is not yet supported');
+      break;
+    case TargetPlatform.flutterWeb:
+      throw UnsupportedError('flutterWeb is not yet supported');
+      break;
+  }
+  var testIsolate = TestIsolate(testRunner: testRunner);
   await testIsolate.start(result, () {
     exit(1);
   });
 
   if (batchMode) {
     await for (var testResult in testIsolate.runAllTests()) {
-      if (testResult.passed) {
+      if (testResult.passed == true) {
         print('pass ${testResult.testName}');
       } else {
         print('fail ${testResult.testName}');
