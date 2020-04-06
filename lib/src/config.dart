@@ -12,8 +12,11 @@ class Config {
     @required this.workspacePath,
     @required this.packageRootPath,
     @required this.testPaths,
-    @required this.sdkRoot,
+    @required this.dartSdkRoot,
     @required this.platformDillPath,
+    @required this.flutterPatchedSdkRoot,
+    @required this.targetPlatform,
+    @required this.flutterTesterPath,
   });
 
   /// The file path to the dart executable.
@@ -32,12 +35,36 @@ class Config {
   /// `pubspec.yaml`.
   final String packageRootPath;
 
-  /// The file path to the root of the current SDK.
-  final String sdkRoot;
+  /// The file path to the root of the current Dart SDK.
+  final String dartSdkRoot;
+
+  /// The file path to the root of the current Flutter patched SDK.
+  final String flutterPatchedSdkRoot;
 
   /// The file path to the platform dill for the current SDK.
   final String platformDillPath;
 
   /// The file paths to the tests that should be executed.
   final List<String> testPaths;
+
+  /// The currently targeted platform.
+  final TargetPlatform targetPlatform;
+
+  /// The path to the flutter test device.
+  final String flutterTesterPath;
+}
+
+/// The compiler configuration for the targeted platform.
+enum TargetPlatform {
+  /// The Dart VM.
+  dart,
+
+  /// Dart in web browsers.
+  web,
+
+  /// The Flutter engine,
+  flutter,
+
+  /// The Flutter web engine,
+  flutterWeb,
 }

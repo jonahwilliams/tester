@@ -17,31 +17,29 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
 
-Future<void> executeTest(dynamic testFn, String name) {
-  runZoned(() async {
-    var passed = false;
-    var timeout = false;
-    dynamic error;
-    dynamic stackTrace;
-    try {
-      await Future(testFn)
-        .timeout(const Duration(seconds: 15));
-      passed = true;
-    } on TimeoutException {
-      timeout = true;
-    } catch (err, st) {
-      error = err;
-      stackTrace = st;
-    } finally {
-      postEvent('testResult', {
-        'test': name,
-        'passed': passed,
-        'timeout': timeout,
-        'error': error?.toString(),
-        'stackTrace': stackTrace?.toString(),
-      });
-    }
-  }, zoneValues: {#test.declarer: null});
+Future<void> executeTest(dynamic testFn, String name) async {
+  var passed = false;
+  var timeout = false;
+  dynamic error;
+  dynamic stackTrace;
+  try {
+    await Future(testFn)
+      .timeout(const Duration(seconds: 15));
+    passed = true;
+  } on TimeoutException {
+    timeout = true;
+  } catch (err, st) {
+    error = err;
+    stackTrace = st;
+  } finally {
+    postEvent('testResult', {
+      'test': name,
+      'passed': passed,
+      'timeout': timeout,
+      'error': error?.toString(),
+      'stackTrace': stackTrace?.toString(),
+    });
+  }
 }
 
 Future<void> main() {
@@ -54,13 +52,16 @@ class Compiler {
     @required ProcessManager processManager,
     @required Config config,
     @required FileSystem fileSystem,
+    @required TargetPlatform compilerMode,
   })  : _processManager = processManager,
         _config = config,
-        _fileSystem = fileSystem;
+        _fileSystem = fileSystem,
+        _compilerMode = compilerMode;
 
   final ProcessManager _processManager;
   final Config _config;
   final FileSystem _fileSystem;
+  final TargetPlatform _compilerMode;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -92,10 +93,9 @@ class Compiler {
     var args = <String>[
       _config.dartPath,
       _config.frontendServerPath,
-      '--target=vm',
+      ..._getArgsForCompilerMode,
+      '--enable-asserts',
       '--packages=${_fileSystem.path.join(_config.packageRootPath, '.packages')}',
-      '--sdk-root=${_config.sdkRoot}',
-      '--platform=${_config.platformDillPath}',
       '--no-link-platform',
       '--output-dill=${dillOutput.path}',
       '--incremental',
@@ -149,6 +149,43 @@ class Compiler {
     _frontendServer.stdin.writeln('accept');
     _lastCompiledTime = DateTime.now();
     return _fileSystem.file(result.outputFilename).absolute.uri;
+  }
+
+  List<String> get _getArgsForCompilerMode {
+    switch (_compilerMode) {
+      case TargetPlatform.dart:
+        return <String>[
+          '--target=vm',
+          '--sdk-root=${_config.dartSdkRoot}',
+          '--platform=${_config.platformDillPath}',
+          '--no-link-platform',
+        ];
+      case TargetPlatform.flutter:
+        return <String>[
+          '--target=flutter',
+          '--sdk-root=${_config.flutterPatchedSdkRoot}',
+          '-Ddart.vm.profile=false',
+          '-Ddart.vm.product=false',
+          '--track-widget-creation',
+        ];
+      case TargetPlatform.web:
+        return <String>[
+          '--target=dartdevc',
+          '--sdk-root=${_config.dartSdkRoot}',
+          '--platform=${_config.platformDillPath}',
+          '--no-link-platform',
+          '--debugger-module-names',
+        ];
+      case TargetPlatform.flutterWeb:
+        return <String>[
+          '--target=dartdevc',
+          '--sdk-root=${_config.dartSdkRoot}',
+          '--platform=${_config.platformDillPath}',
+          '--no-link-platform',
+          '--debugger-module-names',
+        ];
+    }
+    throw StateError('_compilerMode was null');
   }
 }
 

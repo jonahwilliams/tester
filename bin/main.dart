@@ -12,10 +12,17 @@ import 'package:process/process.dart';
 import 'package:tester/src/config.dart';
 import 'package:tester/tester.dart';
 
+const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
+
 final argParser = ArgParser()
   ..addFlag('batch', abbr: 'b', help: 'Whether to run tests in batch mode.')
   ..addOption('project-root', help: 'The path to the project under test')
   ..addOption('flutter-root', help: 'The file path to the Flutter SDK.')
+  ..addOption(
+    'platform',
+    help: 'The platform to run tests on.',
+    allowed: _allowedPlatforms,
+  )
   ..addMultiOption('test');
 
 Future<void> main(List<String> args) async {
@@ -54,6 +61,8 @@ Future<void> main(List<String> args) async {
     fileSystem: const LocalFileSystem(),
     processManager: const LocalProcessManager(),
     config: Config(
+      targetPlatform: TargetPlatform
+          .values[_allowedPlatforms.indexOf(argResults['platform'] as String)],
       workspacePath: argResults['project-root'] as String,
       packageRootPath: argResults['project-root'] as String,
       testPaths: testFiles,
@@ -74,7 +83,7 @@ Future<void> main(List<String> args) async {
         'bin',
         'dart',
       ),
-      sdkRoot: fileSystem.path.join(
+      dartSdkRoot: fileSystem.path.join(
         flutterRoot,
         'bin',
         'cache',
@@ -88,6 +97,24 @@ Future<void> main(List<String> args) async {
         'lib',
         '_internal',
         'vm_platform_strong.dill',
+      ),
+      flutterPatchedSdkRoot: fileSystem.path.join(
+        flutterRoot,
+        'bin',
+        'cache',
+        'artifacts',
+        'engine',
+        'common',
+        'flutter_patched_sdk',
+      ),
+      flutterTesterPath: fileSystem.path.join(
+        flutterRoot,
+        'bin',
+        'cache',
+        'artifacts',
+        'engine',
+        cacheName,
+        'flutter_tester',
       ),
     ),
   );

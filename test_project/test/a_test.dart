@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 void testThatOneIsOne() {
-  if (1 == 1) {
+  if (1 == 2  ) {
     throw Exception('bad222');
   }
 }

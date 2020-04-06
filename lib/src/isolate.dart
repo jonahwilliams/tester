@@ -33,8 +33,8 @@ class TestIsolate {
     _vmService = await vm_service.vmServiceConnectUri(websocketUrl);
 
     var vm = await _vmService.getVM();
-    _testIsolateRef = vm.isolates
-        .firstWhere((element) => element.name == launchResult.isolateName);
+    _testIsolateRef = vm.isolates.firstWhere(
+        (element) => element.name.contains(launchResult.isolateName));
 
     await _reloadLibraries();
     await _vmService.streamListen('Extension');
