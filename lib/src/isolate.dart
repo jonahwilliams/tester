@@ -36,7 +36,8 @@ class TestIsolate {
     _testIsolateRef = vm.isolates.firstWhere(
         (element) => element.name.contains(launchResult.isolateName));
     var isolate = await _vmService.getIsolate(_testIsolateRef.id);
-    if (isolate.pauseEvent == null || isolate.pauseEvent.kind != vm_service.EventKind.kResume) {
+    if (isolate.pauseEvent == null ||
+        isolate.pauseEvent.kind != vm_service.EventKind.kResume) {
       await _vmService.resume(isolate.id);
     }
 
@@ -105,11 +106,9 @@ class TestIsolate {
       result = (await _vmService.callServiceExtension(
         'ext.callTest',
         isolateId: _testIsolateRef.id,
-        args: <String, String>{
-          'test': testName,
-          'library': libraryUri
-        },
-      )).json;
+        args: <String, String>{'test': testName, 'library': libraryUri},
+      ))
+          .json;
     } on vm_service.RPCError catch (err, st) {
       return TestResult(
         testFile: libraryUri,

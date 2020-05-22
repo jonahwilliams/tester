@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:file/file.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 
 import 'compiler.dart';
 import 'config.dart';
@@ -15,30 +15,25 @@ import 'isolate.dart';
 /// rerunning.
 class Resident {
   Resident({
-    @required Compiler compiler,
-    @required TestIsolate testIsolate,
-    @required FileSystem fileSystem,
-    @required Config config,
-  })  : _compiler = compiler,
-        _config = config,
-        _testIsolate = testIsolate,
-        _fileSystem = fileSystem;
+    @required this.compiler,
+    @required this.config,
+    @required this.testIsolate,
+  });
 
-  final Compiler _compiler;
-  final TestIsolate _testIsolate;
-  final FileSystem _fileSystem;
-  final Config _config;
+  final Compiler compiler;
+  final TestIsolate testIsolate;
+  final Config config;
 
   /// Recompile the tests and run all.
   Future<void> rerun() async {
-    var result = await _compiler.recompile();
+    var result = await compiler.recompile();
     if (result != null) {
-      await _testIsolate.reload(result);
+      await testIsolate.reload(result);
     }
-    await for (var testResult in _testIsolate.runAllTests()) {
-      var humanFileName = _fileSystem.path.relative(
+    await for (var testResult in testIsolate.runAllTests()) {
+      var humanFileName = path.relative(
         Uri.parse(testResult.testFile).toFilePath(),
-        from: _config.workspacePath,
+        from: config.workspacePath,
       );
       // Pass
       if (testResult.passed) {
@@ -53,9 +48,9 @@ class Resident {
         continue;
       }
       // Timeout.
-       print('TIMEOUT    $humanFileName/${testResult.testName}');
+      print('TIMEOUT    $humanFileName/${testResult.testName}');
     }
   }
 
-  void dispose() { }
+  void dispose() {}
 }

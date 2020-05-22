@@ -8,7 +8,6 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
-import 'package:process/process.dart';
 
 /// The test runner manages the lifecycle of the platform under test.
 abstract class TestRunner {
@@ -59,11 +58,9 @@ class RunnerStartResult {
 class VmTestRunner implements TestRunner {
   /// Create a new [VmTestRunner].
   VmTestRunner({
-    @required this.processManager,
     @required this.dartExecutable,
   });
 
-  final ProcessManager processManager;
   final String dartExecutable;
 
   Process _process;
@@ -82,8 +79,7 @@ class VmTestRunner implements TestRunner {
     if (uniqueFile.existsSync()) {
       uniqueFile.deleteSync();
     }
-    _process = await processManager.start(<String>[
-      dartExecutable,
+    _process = await Process.start(dartExecutable, <String>[
       '--enable-vm-service=0',
       '--write-service-info=${uniqueFile.path}',
       entrypoint.toString(),
@@ -119,13 +115,10 @@ class VmTestRunner implements TestRunner {
 class FlutterTestRunner extends TestRunner {
   /// Create a new [FlutterTestRunner].
   FlutterTestRunner({
-    @required ProcessManager processManager,
-    @required String flutterTesterPath,
-  })  : _processManager = processManager,
-        _flutterTesterPath = flutterTesterPath;
+    @required this.flutterTesterPath,
+  });
 
-  final ProcessManager _processManager;
-  final String _flutterTesterPath;
+  final String flutterTesterPath;
 
   Process _process;
   bool _disposed = false;
@@ -137,8 +130,7 @@ class FlutterTestRunner extends TestRunner {
     if (uniqueFile.existsSync()) {
       uniqueFile.deleteSync();
     }
-    _process = await _processManager.start(<String>[
-      _flutterTesterPath,
+    _process = await Process.start(flutterTesterPath, <String>[
       '--enable-vm-service=0',
       '--write-service-info=${uniqueFile.path}',
       '--enable-checked-mode',
