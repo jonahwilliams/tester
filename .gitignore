@@ -4,4 +4,6 @@
 .packages
 test_project/main.dart
 
+bin/main.snapshot.dart
+
 !test_project/.packages

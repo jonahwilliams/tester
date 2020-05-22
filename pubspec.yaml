@@ -2,15 +2,17 @@ name: tester
 authors:
   - Jonah Williams
 
+environment:
+  sdk: '>=2.8.0 <3.0.0'
+
 dependencies:
-  vm_service: 4.0.0
-  file:
-  process:
-  platform:
-  package_config:
+  vm_service: 4.0.4
+  file: 5.1.0
+  process: 3.0.12
+  platform: 2.2.1
+  package_config: 1.9.3
   uuid: 2.0.4
   args: 1.6.0
-  dart_console:
   pedantic: 1.9.0
 
 dev_dependencies:

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:dart_console/dart_console.dart';
 import 'package:file/file.dart';
 import 'package:meta/meta.dart';
-import 'package:tester/src/compiler.dart';
-import 'package:tester/src/config.dart';
-import 'package:tester/src/isolate.dart';
+
+import 'compiler.dart';
+import 'config.dart';
+import 'isolate.dart';
 
 /// A resident process which routes commands to the appropriate action.
 ///
@@ -28,7 +28,6 @@ class Resident {
   final TestIsolate _testIsolate;
   final FileSystem _fileSystem;
   final Config _config;
-  final _console = Console();
 
   /// Recompile the tests and run all.
   Future<void> rerun() async {
@@ -37,41 +36,26 @@ class Resident {
       await _testIsolate.reload(result);
     }
     await for (var testResult in _testIsolate.runAllTests()) {
-      _console.eraseLine();
       var humanFileName = _fileSystem.path.relative(
         Uri.parse(testResult.testFile).toFilePath(),
         from: _config.workspacePath,
       );
       // Pass
       if (testResult.passed) {
-        _console.setBackgroundColor(ConsoleColor.brightGreen);
-        _console.write('PASS');
-        _console.resetColorAttributes();
-        _console.writeLine(
-            '    $humanFileName/${testResult.testName}');
+        print('PASS    $humanFileName/${testResult.testName}');
         continue;
       }
       // Fail
       if (!testResult.passed && !testResult.timeout) {
-        _console.setBackgroundColor(ConsoleColor.brightRed);
-        _console.write('FAIL');
-        _console.resetColorAttributes();
-        _console.writeLine(
-            '    $humanFileName/${testResult.testName}');
-        _console.writeLine(testResult.errorMessage);
-        _console.writeLine(testResult.stackTrace);
+        print('FAIL    $humanFileName/${testResult.testName}');
+        print(testResult.errorMessage);
+        print(testResult.stackTrace);
         continue;
       }
       // Timeout.
-      _console.setBackgroundColor(ConsoleColor.brightYellow);
-      _console.write('TIMEOUT');
-      _console.resetColorAttributes();
-      _console.writeLine(
-          '    $humanFileName/${testResult.testName}');
+       print('TIMEOUT    $humanFileName/${testResult.testName}');
     }
   }
 
-  void dispose() {
-    _console.resetColorAttributes();
-  }
+  void dispose() { }
 }

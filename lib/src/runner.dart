@@ -3,15 +3,12 @@
 // found in the LICENSE file.
 
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:process/process.dart';
-import 'package:uuid/uuid.dart';
 
 /// The test runner manages the lifecycle of the platform under test.
 abstract class TestRunner {
@@ -33,6 +30,17 @@ abstract class TestRunner {
   FutureOr<void> dispose();
 }
 
+Future<String> _pollForServiceFile(File file) async {
+  while (true) {
+    if (file.existsSync()) {
+      var result = file.readAsStringSync();
+      file.deleteSync();
+      return result;
+    }
+    await Future<void>.delayed(const Duration(seconds: 1));
+  }
+}
+
 /// The result of starting a [TestRunner].
 class RunnerStartResult {
   const RunnerStartResult({
@@ -50,47 +58,60 @@ class RunnerStartResult {
 /// A test runner which executes code on the Dart VM.
 class VmTestRunner implements TestRunner {
   /// Create a new [VmTestRunner].
-  VmTestRunner();
+  VmTestRunner({
+    @required this.processManager,
+    @required this.dartExecutable,
+  });
 
-  Isolate _isolate;
+  final ProcessManager processManager;
+  final String dartExecutable;
+
+  Process _process;
   var _disposed = false;
 
   @override
   Future<RunnerStartResult> start(
       Uri entrypoint, void Function() onExit) async {
-    if (_isolate != null) {
+    if (_process != null) {
       throw StateError('VmTestRunner already started');
     }
     if (_disposed) {
       throw StateError('VmTestRunner has already been disposed');
     }
-    var serviceInfo = await Service.getInfo();
-    if (serviceInfo.serverUri == null) {
-      throw StateError('Ensure tester is run with --observe');
+    var uniqueFile = File(Object().hashCode.toString());
+    if (uniqueFile.existsSync()) {
+      uniqueFile.deleteSync();
     }
-    var uniqueId = Uuid().v4();
-    _isolate = await Isolate.spawnUri(
-      entrypoint,
-      [],
-      null,
-      debugName: uniqueId,
-    );
+    _process = await processManager.start(<String>[
+      dartExecutable,
+      '--enable-vm-service=0',
+      '--write-service-info=${uniqueFile.path}',
+      entrypoint.toString(),
+    ]);
+    unawaited(_process.exitCode.whenComplete(() {
+      if (!_disposed) {
+        onExit();
+      }
+    }));
+
+    var serviceContents = await _pollForServiceFile(uniqueFile);
+
     return RunnerStartResult(
-      isolateName: uniqueId,
-      serviceUri: serviceInfo.serverUri,
+      isolateName: '',
+      serviceUri: Uri.parse(json.decode(serviceContents)['uri'] as String),
     );
   }
 
   @override
   void dispose() {
-    if (_isolate == null) {
+    if (_process == null) {
       throw StateError('VmTestRunner has not been started');
     }
     if (_disposed) {
       throw StateError('VmTestRunner has already been disposed');
     }
     _disposed = true;
-    _isolate.kill();
+    _process.kill();
   }
 }
 
@@ -103,9 +124,6 @@ class FlutterTestRunner extends TestRunner {
   })  : _processManager = processManager,
         _flutterTesterPath = flutterTesterPath;
 
-  static final _serviceRegex = RegExp(RegExp.escape('Observatory') +
-      r' listening on ((http|//)[a-zA-Z0-9:/=_\-\.\[\]]+)');
-
   final ProcessManager _processManager;
   final String _flutterTesterPath;
 
@@ -115,10 +133,23 @@ class FlutterTestRunner extends TestRunner {
   @override
   FutureOr<RunnerStartResult> start(
       Uri entrypoint, void Function() onExit) async {
+    var uniqueFile = File(Object().hashCode.toString());
+    if (uniqueFile.existsSync()) {
+      uniqueFile.deleteSync();
+    }
     _process = await _processManager.start(<String>[
       _flutterTesterPath,
+      '--enable-vm-service=0',
+      '--write-service-info=${uniqueFile.path}',
+      '--enable-checked-mode',
+      '--verify-entry-points',
+      '--enable-software-rendering',
+      '--skia-deterministic-rendering',
+      '--enable-dart-profiling',
+      '--non-interactive',
+      '--use-test-fonts',
+      '--enable-mirrors',
       entrypoint.toFilePath(),
-      '--run-forever',
     ]);
     unawaited(_process.exitCode.whenComplete(() {
       if (!_disposed) {
@@ -126,23 +157,11 @@ class FlutterTestRunner extends TestRunner {
       }
     }));
 
-    // TODO: replace this with the VM service write file to path logic.
-    var completer = Completer<Uri>();
-    _process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((String line) {
-
-      print(line);
-      var match = _serviceRegex.firstMatch(line);
-      if (match == null) {
-        return;
-      }
-      completer.complete(Uri.parse(match[1]));
-    });
+    var serviceContents = await _pollForServiceFile(uniqueFile);
+    print(serviceContents);
     return RunnerStartResult(
-      serviceUri: await completer.future,
       isolateName: '',
+      serviceUri: Uri.parse(json.decode(serviceContents)['uri'] as String),
     );
   }
 
