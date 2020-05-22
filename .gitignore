@@ -6,4 +6,6 @@ test_project/main.dart
 
 bin/main.snapshot.dart
 
+.vscode/
+
 !test_project/.packages

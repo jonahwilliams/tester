@@ -6,10 +6,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:file/file.dart';
 import 'package:meta/meta.dart';
-import 'package:process/process.dart';
-import 'package:tester/src/config.dart';
+import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 import 'config.dart';
@@ -65,19 +63,12 @@ Future<void> main() {
 /// The frontend_server communicates to this tool over stdin and stdout.
 class Compiler {
   Compiler({
-    @required ProcessManager processManager,
-    @required Config config,
-    @required FileSystem fileSystem,
-    @required TargetPlatform compilerMode,
-  })  : _processManager = processManager,
-        _config = config,
-        _fileSystem = fileSystem,
-        _compilerMode = compilerMode;
+    @required this.config,
+    @required this.compilerMode,
+  });
 
-  final ProcessManager _processManager;
-  final Config _config;
-  final FileSystem _fileSystem;
-  final TargetPlatform _compilerMode;
+  final Config config;
+  final TargetPlatform compilerMode;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -88,31 +79,26 @@ class Compiler {
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
   Future<Uri> start() async {
-    var workspace = _fileSystem.directory(_config.workspacePath);
+    var workspace = Directory(config.workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
-    _mainFile = workspace.childFile('main.dart');
+    _mainFile = File(path.join(workspace.path, 'main.dart'));
     var contents = StringBuffer();
-    for (var testPath in _config.tests) {
+    for (var testPath in config.tests) {
       contents.writeln('import "${testPath}";');
     }
     contents.write(_testMain);
     _mainFile.writeAsStringSync(contents.toString());
 
-    var dillOutput = _fileSystem
-        .directory(_config.packageRootPath)
-        .childFile('main.dart.dill')
-        .absolute;
+    var dillOutput =
+        File(path.join(config.packageRootPath, 'main.dart.dill')).absolute;
 
     _stdoutHandler = StdoutHandler();
-    _projectFileInvalidator = ProjectFileInvalidator(fileSystem: _fileSystem);
-    var packagesUri = _fileSystem
-        .file(_fileSystem.path.join(_config.packageRootPath, '.packages'))
-        .uri;
+    _projectFileInvalidator = ProjectFileInvalidator();
+    var packagesUri = File(path.join(config.packageRootPath, '.packages')).uri;
     var args = <String>[
-      _config.dartPath,
-      _config.frontendServerPath,
+      config.frontendServerPath,
       ..._getArgsForCompilerMode,
       '--enable-asserts',
       '--packages=$packagesUri',
@@ -120,7 +106,7 @@ class Compiler {
       '--output-dill=${dillOutput.path}',
       '--incremental',
     ];
-    _frontendServer = await _processManager.start(args);
+    _frontendServer = await Process.start(config.dartPath, args);
     _frontendServer.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
@@ -145,10 +131,8 @@ class Compiler {
     var invalidated = await _projectFileInvalidator.findInvalidated(
       lastCompiled: _lastCompiledTime,
       urisToMonitor: _dependencies,
-      packagesUri: _fileSystem
-          .directory(_config.packageRootPath)
-          .childFile('.packages')
-          .uri,
+      packagesUri:
+          Directory(path.join(config.packageRootPath, '.packages')).uri,
     );
     if (invalidated.isEmpty) {
       return null;
@@ -168,22 +152,22 @@ class Compiler {
     }
     _frontendServer.stdin.writeln('accept');
     _lastCompiledTime = DateTime.now();
-    return _fileSystem.file(result.outputFilename).absolute.uri;
+    return File(result.outputFilename).absolute.uri;
   }
 
   List<String> get _getArgsForCompilerMode {
-    switch (_compilerMode) {
+    switch (compilerMode) {
       case TargetPlatform.dart:
         return <String>[
           '--target=vm',
-          '--sdk-root=${_config.dartSdkRoot}',
-          '--platform=${_config.platformDillUri}',
+          '--sdk-root=${config.dartSdkRoot}',
+          '--platform=${config.platformDillUri}',
           '--no-link-platform',
         ];
       case TargetPlatform.flutter:
         return <String>[
           '--target=flutter',
-          '--sdk-root=${_config.flutterPatchedSdkRoot}',
+          '--sdk-root=${config.flutterPatchedSdkRoot}',
           '-Ddart.vm.profile=false',
           '-Ddart.vm.product=false',
           '--track-widget-creation',
@@ -191,16 +175,16 @@ class Compiler {
       case TargetPlatform.web:
         return <String>[
           '--target=dartdevc',
-          '--sdk-root=${_config.dartSdkRoot}',
-          '--platform=${_config.platformDillUri}',
+          '--sdk-root=${config.dartSdkRoot}',
+          '--platform=${config.platformDillUri}',
           '--no-link-platform',
           '--debugger-module-names',
         ];
       case TargetPlatform.flutterWeb:
         return <String>[
           '--target=dartdevc',
-          '--sdk-root=${_config.dartSdkRoot}',
-          '--platform=${_config.platformDillUri}',
+          '--sdk-root=${config.dartSdkRoot}',
+          '--platform=${config.platformDillUri}',
           '--no-link-platform',
           '--debugger-module-names',
         ];
@@ -301,11 +285,6 @@ class CompilerOutput {
 }
 
 class ProjectFileInvalidator {
-  ProjectFileInvalidator({
-    @required FileSystem fileSystem,
-  }) : _fileSystem = fileSystem;
-
-  final FileSystem _fileSystem;
   static const _pubCachePathLinuxAndMac = '.pub-cache';
 
   Future<List<Uri>> findInvalidated({
@@ -320,14 +299,15 @@ class ProjectFileInvalidator {
     }
     var urisToScan = <Uri>[
       // Don't watch pub cache directories to speed things up a little.
-      for (var uri in urisToMonitor) if (_isNotInPubCache(uri)) uri,
+      for (var uri in urisToMonitor)
+        if (_isNotInPubCache(uri)) uri,
 
       // We need to check the .packages file too since it is not used in compilation.
       packagesUri,
     ];
     var invalidatedFiles = <Uri>[];
     for (var uri in urisToScan) {
-      var updatedAt = _fileSystem.statSync(uri.toFilePath()).modified;
+      var updatedAt = File(uri.toString()).statSync().modified;
       if (updatedAt != null && updatedAt.isAfter(lastCompiled)) {
         invalidatedFiles.add(uri);
       }
