@@ -40,10 +40,8 @@ void runApplication({
       );
       break;
     case TargetPlatform.web:
-      throw UnsupportedError('web is not yet supported');
-      break;
     case TargetPlatform.flutterWeb:
-      throw UnsupportedError('flutterWeb is not yet supported');
+      testRunner = ChromeTestRunner();
       break;
   }
   runners.add(testRunner);

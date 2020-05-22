@@ -119,6 +119,14 @@ Future<void> main(List<String> args) async {
         cacheName,
         'flutter_tester',
       ),
+      flutterWebPlatformDillUri: File(path.join(
+        flutterRoot,
+        'bin',
+        'cache',
+        'flutter_web_sdk',
+        'kernel',
+        'flutter_ddc_sdk.dill',
+      )).uri
     ),
   );
 }
