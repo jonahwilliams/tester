@@ -1,5 +1,8 @@
 .dart_tool/
 *.dill
+*.dill.json
+*.dill.map
+*.dill.sources
 .idea/
 .packages
 test_project/main.dart

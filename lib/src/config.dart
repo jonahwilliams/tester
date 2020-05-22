@@ -17,6 +17,7 @@ class Config {
     @required this.flutterPatchedSdkRoot,
     @required this.targetPlatform,
     @required this.flutterTesterPath,
+    @required this.flutterWebPlatformDillUri,
   });
 
   /// The file path to the dart executable.
@@ -43,6 +44,9 @@ class Config {
 
   /// The file URI to the platform dill for the current SDK.
   final Uri platformDillUri;
+
+  /// The file URI to the platform dill for flutter web applications.
+  final Uri flutterWebPlatformDillUri;
 
   /// The file paths to the tests that should be executed.
   final List<Uri> tests;

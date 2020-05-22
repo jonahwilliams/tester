@@ -6,8 +6,11 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dwds/dwds.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:path/path.dart' as path;
+import 'package:webkit_inspection_protocol/webkit_inspection_protocol.dart';
 
 /// The test runner manages the lifecycle of the platform under test.
 abstract class TestRunner {
@@ -120,6 +123,9 @@ class FlutterTestRunner extends TestRunner {
 
   final String flutterTesterPath;
 
+  static final _serviceRegex = RegExp(RegExp.escape('Observatory') +
+      r' listening on ((http|//)[a-zA-Z0-9:/=_\-\.\[\]]+)');
+
   Process _process;
   bool _disposed = false;
 
@@ -132,7 +138,6 @@ class FlutterTestRunner extends TestRunner {
     }
     _process = await Process.start(flutterTesterPath, <String>[
       '--enable-vm-service=0',
-      '--write-service-info=${uniqueFile.path}',
       '--enable-checked-mode',
       '--verify-entry-points',
       '--enable-software-rendering',
@@ -140,7 +145,6 @@ class FlutterTestRunner extends TestRunner {
       '--enable-dart-profiling',
       '--non-interactive',
       '--use-test-fonts',
-      '--enable-mirrors',
       entrypoint.toFilePath(),
     ]);
     unawaited(_process.exitCode.whenComplete(() {
@@ -148,13 +152,22 @@ class FlutterTestRunner extends TestRunner {
         onExit();
       }
     }));
+    var serviceInfo = Completer<Uri>();
+    StreamSubscription subscription;
+    subscription = _process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((String line) {
+      var match = _serviceRegex.firstMatch(line);
+      if (match == null) {
+        return;
+      }
+      serviceInfo.complete(Uri.parse(match[1]));
+      subscription.cancel();
+    });
 
-    var serviceContents = await _pollForServiceFile(uniqueFile);
-    print(serviceContents);
     return RunnerStartResult(
-      isolateName: '',
-      serviceUri: Uri.parse(json.decode(serviceContents)['uri'] as String),
-    );
+        isolateName: '', serviceUri: await serviceInfo.future);
   }
 
   @override
@@ -168,4 +181,202 @@ class FlutterTestRunner extends TestRunner {
     _disposed = true;
     _process.kill();
   }
+}
+
+/// A test runner that spawns chrome and a dwds process.
+class ChromeTestRunner extends TestRunner {
+  ChromeTestRunner();
+
+  /// The expected executable name on linux.
+  static const String kLinuxExecutable = 'google-chrome';
+
+  /// The expected executable name on macOS.
+  static const String kMacOSExecutable =
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+
+  /// The expected Chrome executable name on Windows.
+  static const String kWindowsExecutable =
+      r'Google\Chrome\Application\chrome.exe';
+
+  Process _chromeProcess;
+  Dwds _dwds;
+  Directory _chromeTempProfile;
+  HttpServer _httpServer;
+
+  @override
+  FutureOr<void> dispose() async {
+    await _dwds.stop();
+    await _httpServer.close();
+    _chromeProcess.kill();
+    await _chromeProcess.exitCode;
+
+    try {
+      _chromeTempProfile.deleteSync(recursive: true);
+    } on FileSystemException {
+      // Oops...
+    }
+  }
+
+  @override
+  FutureOr<RunnerStartResult> start(
+      Uri entrypoint, void Function() onExit) async {
+    var chromeConnection = Completer<ChromeConnection>();
+
+    var serverPort = await findFreePort();
+    _httpServer = await HttpServer.bind('localhost', serverPort);
+    _httpServer.listen((HttpRequest request) {
+      request.response.write('''
+<html>
+    <body>
+        <script src="main.dart.js"></script>
+    </body>
+</html>
+''');
+      request.response.close();
+    });
+
+    var port = await findFreePort();
+
+    _chromeTempProfile = Directory.systemTemp.createTempSync('test_process')
+      ..createSync();
+
+    _chromeProcess = await Process.start(_findChromeExecutable(), <String>[
+      // Using a tmp directory ensures that a new instance of chrome launches
+      // allowing for the remote debug port to be enabled.
+      '--user-data-dir=${_chromeTempProfile.path}',
+      '--remote-debugging-port=${port}',
+      // When the DevTools has focus we don't want to slow down the application.
+      '--disable-background-timer-throttling',
+      // Since we are using a temp profile, disable features that slow the
+      // Chrome launch.
+      '--disable-extensions',
+      '--disable-popup-blocking',
+      '--bwsi',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-default-apps',
+      '--disable-translate',
+      // '--headless',
+      '--disable-gpu',
+      '--no-sandbox',
+      '--window-size=2400,1800',
+      'http://localhost:$serverPort',
+    ]);
+
+    await _chromeProcess.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .firstWhere((String line) => line.startsWith('DevTools listening'),
+            orElse: () {
+      return 'Failed to spawn stderr';
+    });
+    await _getRemoteDebuggerUrl(Uri.parse('http://localhost:$port'));
+    chromeConnection.complete(ChromeConnection('localhost', port));
+
+    _dwds = await Dwds.start(
+      assetReader: FrontendServerAssetReader(
+          entrypoint.toString(), File(entrypoint.toFilePath()).parent.path),
+      buildResults: const Stream.empty(),
+      chromeConnection: () {
+        return chromeConnection.future;
+      },
+      serveDevTools: false,
+      enableDebugging: true,
+      loadStrategy: RequireStrategy(
+        ReloadConfiguration.none,
+        '',
+        null,
+        null,
+        null,
+        null,
+        null,
+      ),
+    );
+
+    await for (var connection in _dwds.connectedApps) {
+      connection.runMain();
+      var debugConnection = await _dwds.debugConnection(connection);
+      return RunnerStartResult(
+        isolateName: '',
+        serviceUri: Uri.parse(debugConnection.uri),
+      );
+    }
+    throw Exception();
+  }
+
+  /// Find the chrome executable on the current platform.
+  ///
+  /// Does not verify whether the executable exists.
+  String _findChromeExecutable() {
+    if (Platform.isLinux) {
+      return kLinuxExecutable;
+    }
+    if (Platform.isMacOS) {
+      return kMacOSExecutable;
+    }
+    if (Platform.isWindows) {
+      /// The possible locations where the chrome executable can be located on windows.
+      var kWindowsPrefixes = <String>[
+        Platform.environment['LOCALAPPDATA'],
+        Platform.environment['PROGRAMFILES'],
+        Platform.environment['PROGRAMFILES(X86)'],
+      ];
+      var windowsPrefix = kWindowsPrefixes.firstWhere((String prefix) {
+        if (prefix == null) {
+          return false;
+        }
+        var exePath = path.join(prefix, kWindowsExecutable);
+        return File(exePath).existsSync();
+      }, orElse: () => '.');
+      return path.join(windowsPrefix, kWindowsExecutable);
+    }
+    assert(false);
+    return null;
+  }
+
+  /// Returns the full URL of the Chrome remote debugger for the main page.
+  ///
+  /// This takes the [base] remote debugger URL (which points to a browser-wide
+  /// page) and uses its JSON API to find the resolved URL for debugging the host
+  /// page.
+  Future<Uri> _getRemoteDebuggerUrl(Uri base) async {
+    try {
+      var client = HttpClient();
+      var request = await client.getUrl(base.resolve('/json/list'));
+      var response = await request.close();
+      var jsonObject =
+          await json.fuse(utf8).decoder.bind(response).single as List<dynamic>;
+      if (jsonObject == null || jsonObject.isEmpty) {
+        return base;
+      }
+      return base.resolve(jsonObject.first['devtoolsFrontendUrl'] as String);
+    } on Exception {
+      // If we fail to talk to the remote debugger protocol, give up and return
+      // the raw URL rather than crashing.
+      return base;
+    }
+  }
+}
+
+Future<int> findFreePort({bool ipv6 = false}) async {
+  var port = 0;
+  ServerSocket serverSocket;
+  var loopback =
+      ipv6 ? InternetAddress.loopbackIPv6 : InternetAddress.loopbackIPv4;
+  try {
+    serverSocket = await ServerSocket.bind(loopback, 0);
+    port = serverSocket.port;
+  } on SocketException {
+    // If ipv4 loopback bind fails, try ipv6.
+    if (!ipv6) {
+      return findFreePort(ipv6: true);
+    }
+  } on Exception {
+    // Failures are signaled by a return value of 0 from this function.
+  } finally {
+    if (serverSocket != null) {
+      await serverSocket.close();
+    }
+  }
+  return port;
 }

@@ -11,24 +11,23 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 import 'config.dart';
+import 'analyzer.dart';
 
 const _testMain = r'''
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
-import 'dart:mirrors';
 
 Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
-  final mirrorSystem = currentMirrorSystem();
-  final library = mirrorSystem.libraries[Uri.parse(libraryUri)];
+  var testFunction = testRegistry[libraryUri][name];
 
   var passed = false;
   var timeout = false;
   dynamic error;
   dynamic stackTrace;
   try {
-    await Future(() => library.invoke(Symbol(name), <dynamic>[]))
+    await Future(() => testFunction())
       .timeout(const Duration(seconds: 15));
     passed = true;
   } on TimeoutException {
@@ -79,16 +78,30 @@ class Compiler {
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
   Future<Uri> start() async {
+    var analyzer = const Analyzer();
     var workspace = Directory(config.workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
     _mainFile = File(path.join(workspace.path, 'main.dart'));
+
     var contents = StringBuffer();
+    var testsByFile = <Uri, List<String>>{};
     for (var testPath in config.tests) {
+      testsByFile[testPath] = analyzer.collectTestNames(testPath.toFilePath());
       contents.writeln('import "${testPath}";');
     }
     contents.write(_testMain);
+    contents.writeln('var testRegistry = {');
+    for (var testPath in testsByFile.keys) {
+      contents.writeln('"${testPath}": {');
+      for (var testName in testsByFile[testPath]) {
+        contents.writeln('"${testName}": $testName,');
+      }
+      contents.writeln('},');
+    }
+    contents.writeln('};');
+
     _mainFile.writeAsStringSync(contents.toString());
 
     var dillOutput =
@@ -184,7 +197,7 @@ class Compiler {
         return <String>[
           '--target=dartdevc',
           '--sdk-root=${config.dartSdkRoot}',
-          '--platform=${config.platformDillUri}',
+          '--platform=${config.flutterWebPlatformDillUri}',
           '--no-link-platform',
           '--debugger-module-names',
         ];
