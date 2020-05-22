@@ -6,9 +6,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:meta/meta.dart';
-import 'package:tester/src/runner.dart';
 import 'package:vm_service/vm_service.dart' as vm_service;
 import 'package:vm_service/vm_service_io.dart' as vm_service;
+
+import 'runner.dart';
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
 class TestIsolate {
@@ -18,7 +19,6 @@ class TestIsolate {
 
   final TestRunner _testRunner;
   final _libraries = <String, vm_service.Library>{};
-  final _pendingTests = <String, Completer<Map<dynamic, dynamic>>>{};
   vm_service.Library _mainLibrary;
   vm_service.IsolateRef _testIsolateRef;
   vm_service.VmService _vmService;
@@ -35,20 +35,13 @@ class TestIsolate {
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.firstWhere(
         (element) => element.name.contains(launchResult.isolateName));
+    var isolate = await _vmService.getIsolate(_testIsolateRef.id);
+    if (isolate.pauseEvent == null || isolate.pauseEvent.kind != vm_service.EventKind.kResume) {
+      await _vmService.resume(isolate.id);
+    }
 
     await _reloadLibraries();
-    await _vmService.streamListen('Extension');
     await _vmService.streamListen('Stdout');
-
-    _extensionSubscription = _vmService.onExtensionEvent.listen((event) {
-      var data = event.extensionData.data;
-      var testName = data['test'] as String;
-      var completer = _pendingTests[testName];
-      if (completer == null) {
-        throw StateError('$testName completed but was unexpected.');
-      }
-      completer.complete(data);
-    });
 
     _logSubscription = _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
@@ -107,14 +100,16 @@ class TestIsolate {
       throw Exception('No test $testName defined');
     }
 
-    var completer =
-        _pendingTests[testName] = Completer<Map<dynamic, dynamic>>();
+    Map<String, Object> result;
     try {
-      await _vmService.evaluate(
-        _testIsolateRef.id,
-        _mainLibrary.id,
-        'executeTest($testName, "$testName")',
-      );
+      result = (await _vmService.callServiceExtension(
+        'ext.callTest',
+        isolateId: _testIsolateRef.id,
+        args: <String, String>{
+          'test': testName,
+          'library': libraryUri
+        },
+      )).json;
     } on vm_service.RPCError catch (err, st) {
       return TestResult(
         testFile: libraryUri,
@@ -127,7 +122,7 @@ class TestIsolate {
     }
 
     return TestResult.fromMessage(
-      await completer.future,
+      result,
       libraryUri,
     );
   }

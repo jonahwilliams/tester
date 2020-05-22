@@ -12,18 +12,25 @@ import 'package:process/process.dart';
 import 'package:tester/src/config.dart';
 import 'package:uuid/uuid.dart';
 
+import 'config.dart';
+
 const _testMain = r'''
+import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
+import 'dart:mirrors';
 
-Future<void> executeTest(dynamic testFn, String name) async {
+Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
+  final mirrorSystem = currentMirrorSystem();
+  final library = mirrorSystem.libraries[Uri.parse(libraryUri)];
+
   var passed = false;
   var timeout = false;
   dynamic error;
   dynamic stackTrace;
   try {
-    await Future(testFn)
+    await Future(() => library.invoke(Symbol(name), <dynamic>[]))
       .timeout(const Duration(seconds: 15));
     passed = true;
   } on TimeoutException {
@@ -32,21 +39,30 @@ Future<void> executeTest(dynamic testFn, String name) async {
     error = err;
     stackTrace = st;
   } finally {
-    postEvent('testResult', {
+    return <String, Object>{
       'test': name,
       'passed': passed,
       'timeout': timeout,
       'error': error?.toString(),
       'stackTrace': stackTrace?.toString(),
-    });
+    };
   }
 }
 
 Future<void> main() {
+  registerExtension('ext.callTest', (String request, Map<String, String> args) async {
+    var test = args['test'];
+    var library = args['library'];
+    final result = await executeTest(test, library);
+    return ServiceExtensionResponse.result(json.encode(result));
+  });
   stdin.listen((_) { });
 }
 ''';
 
+/// Abstraction for the frontend_server compiler process.
+///
+/// The frontend_server communicates to this tool over stdin and stdout.
 class Compiler {
   Compiler({
     @required ProcessManager processManager,
@@ -78,7 +94,7 @@ class Compiler {
     }
     _mainFile = workspace.childFile('main.dart');
     var contents = StringBuffer();
-    for (var testPath in _config.testPaths) {
+    for (var testPath in _config.tests) {
       contents.writeln('import "${testPath}";');
     }
     contents.write(_testMain);
@@ -86,16 +102,20 @@ class Compiler {
 
     var dillOutput = _fileSystem
         .directory(_config.packageRootPath)
-        .childFile('main.dart.dill');
+        .childFile('main.dart.dill')
+        .absolute;
 
     _stdoutHandler = StdoutHandler();
     _projectFileInvalidator = ProjectFileInvalidator(fileSystem: _fileSystem);
+    var packagesUri = _fileSystem
+        .file(_fileSystem.path.join(_config.packageRootPath, '.packages'))
+        .uri;
     var args = <String>[
       _config.dartPath,
       _config.frontendServerPath,
       ..._getArgsForCompilerMode,
       '--enable-asserts',
-      '--packages=${_fileSystem.path.join(_config.packageRootPath, '.packages')}',
+      '--packages=$packagesUri',
       '--no-link-platform',
       '--output-dill=${dillOutput.path}',
       '--incremental',
@@ -125,10 +145,10 @@ class Compiler {
     var invalidated = await _projectFileInvalidator.findInvalidated(
       lastCompiled: _lastCompiledTime,
       urisToMonitor: _dependencies,
-      packagesPath: _fileSystem
+      packagesUri: _fileSystem
           .directory(_config.packageRootPath)
           .childFile('.packages')
-          .path,
+          .uri,
     );
     if (invalidated.isEmpty) {
       return null;
@@ -157,7 +177,7 @@ class Compiler {
         return <String>[
           '--target=vm',
           '--sdk-root=${_config.dartSdkRoot}',
-          '--platform=${_config.platformDillPath}',
+          '--platform=${_config.platformDillUri}',
           '--no-link-platform',
         ];
       case TargetPlatform.flutter:
@@ -172,7 +192,7 @@ class Compiler {
         return <String>[
           '--target=dartdevc',
           '--sdk-root=${_config.dartSdkRoot}',
-          '--platform=${_config.platformDillPath}',
+          '--platform=${_config.platformDillUri}',
           '--no-link-platform',
           '--debugger-module-names',
         ];
@@ -180,7 +200,7 @@ class Compiler {
         return <String>[
           '--target=dartdevc',
           '--sdk-root=${_config.dartSdkRoot}',
-          '--platform=${_config.platformDillPath}',
+          '--platform=${_config.platformDillUri}',
           '--no-link-platform',
           '--debugger-module-names',
         ];
@@ -286,20 +306,15 @@ class ProjectFileInvalidator {
   }) : _fileSystem = fileSystem;
 
   final FileSystem _fileSystem;
-
-  static const String _pubCachePathLinuxAndMac = '.pub-cache';
+  static const _pubCachePathLinuxAndMac = '.pub-cache';
 
   Future<List<Uri>> findInvalidated({
     @required DateTime lastCompiled,
     @required List<Uri> urisToMonitor,
-    @required String packagesPath,
+    @required Uri packagesUri,
     bool asyncScanning = false,
   }) async {
-    assert(urisToMonitor != null);
-    assert(packagesPath != null);
-
     if (lastCompiled == null) {
-      // Initial load.
       assert(urisToMonitor.isEmpty);
       return <Uri>[];
     }
@@ -308,7 +323,7 @@ class ProjectFileInvalidator {
       for (var uri in urisToMonitor) if (_isNotInPubCache(uri)) uri,
 
       // We need to check the .packages file too since it is not used in compilation.
-      _fileSystem.file(packagesPath).uri,
+      packagesUri,
     ];
     var invalidatedFiles = <Uri>[];
     for (var uri in urisToScan) {

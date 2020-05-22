@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:file/file.dart';
@@ -17,55 +18,66 @@ const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
 final argParser = ArgParser()
   ..addFlag('batch', abbr: 'b', help: 'Whether to run tests in batch mode.')
   ..addOption('project-root', help: 'The path to the project under test')
-  ..addOption('flutter-root', help: 'The file path to the Flutter SDK.')
   ..addOption(
     'platform',
     help: 'The platform to run tests on.',
     allowed: _allowedPlatforms,
+    defaultsTo: 'dart',
   )
   ..addMultiOption('test');
 
 Future<void> main(List<String> args) async {
-  var argResults = argParser.parse(args);
-  var flutterRoot = argResults['flutter-root'] as String;
   var fileSystem = const LocalFileSystem();
   var platform = const LocalPlatform();
+
+  var argResults = argParser.parse(args);
+  var flutterRoot = fileSystem.file(platform.resolvedExecutable)
+    .parent
+    .parent
+    .parent
+    .parent
+    .parent.path;
   String cacheName;
   if (platform.isMacOS) {
     cacheName = 'darwin-x64';
   } else if (platform.isLinux) {
     cacheName = 'linux-x64';
   } else if (platform.isWindows) {
-    cacheName = 'window-x64';
+    cacheName = 'windows-x64';
   } else {
     print('Unsupported platform $platform');
     return;
   }
 
-  List<String> testFiles;
+  List<Uri> tests;
   if (argResults.wasParsed('test')) {
-    testFiles = argResults['test'] as List<String>;
+    tests = (argResults['test'] as List<String>)
+        .map((path) => fileSystem.file(path).uri)
+        .toList();
   } else {
-    testFiles = fileSystem
-        .directory(argResults['project-root'])
+    tests = fileSystem
+        .directory(argResults['project-root'] ?? '.')
         .childDirectory('test')
         .listSync(recursive: true)
         .whereType<File>()
         .where((file) => file.path.endsWith('_test.dart'))
-        .map((file) => fileSystem.path
-            .relative(file.path, from: argResults['project-root'] as String))
+        .map((file) => file.absolute.uri)
         .toList();
   }
+
+  var projectDirectory =
+      argResults['project-root'] as String ?? fileSystem.currentDirectory.path;
+
   runApplication(
     batchMode: argResults['batch'] as bool,
-    fileSystem: const LocalFileSystem(),
+    fileSystem: fileSystem,
     processManager: const LocalProcessManager(),
     config: Config(
       targetPlatform: TargetPlatform
           .values[_allowedPlatforms.indexOf(argResults['platform'] as String)],
-      workspacePath: argResults['project-root'] as String,
-      packageRootPath: argResults['project-root'] as String,
-      testPaths: testFiles,
+      workspacePath: projectDirectory,
+      packageRootPath: projectDirectory,
+      tests: tests,
       frontendServerPath: fileSystem.path.join(
         flutterRoot,
         'bin',
@@ -89,15 +101,17 @@ Future<void> main(List<String> args) async {
         'cache',
         'dart-sdk',
       ),
-      platformDillPath: fileSystem.path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'dart-sdk',
-        'lib',
-        '_internal',
-        'vm_platform_strong.dill',
-      ),
+      platformDillUri: fileSystem
+          .file(fileSystem.path.join(
+            flutterRoot,
+            'bin',
+            'cache',
+            'dart-sdk',
+            'lib',
+            '_internal',
+            'vm_platform_strong.dill',
+          ))
+          .uri,
       flutterPatchedSdkRoot: fileSystem.path.join(
         flutterRoot,
         'bin',

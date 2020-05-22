@@ -11,9 +11,9 @@ class Config {
     @required this.frontendServerPath,
     @required this.workspacePath,
     @required this.packageRootPath,
-    @required this.testPaths,
+    @required this.tests,
     @required this.dartSdkRoot,
-    @required this.platformDillPath,
+    @required this.platformDillUri,
     @required this.flutterPatchedSdkRoot,
     @required this.targetPlatform,
     @required this.flutterTesterPath,
@@ -41,11 +41,11 @@ class Config {
   /// The file path to the root of the current Flutter patched SDK.
   final String flutterPatchedSdkRoot;
 
-  /// The file path to the platform dill for the current SDK.
-  final String platformDillPath;
+  /// The file URI to the platform dill for the current SDK.
+  final Uri platformDillUri;
 
   /// The file paths to the tests that should be executed.
-  final List<String> testPaths;
+  final List<Uri> tests;
 
   /// The currently targeted platform.
   final TargetPlatform targetPlatform;

@@ -1,0 +1,9 @@
+name: test_project
+
+environment:
+  sdk: '>=2.8.0 <3.0.0'
+
+dependencies:
+  tester_runtime:
+    path:
+      ../tester_runtime
