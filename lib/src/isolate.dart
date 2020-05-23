@@ -10,6 +10,7 @@ import 'package:vm_service/vm_service.dart' as vm_service;
 import 'package:vm_service/vm_service_io.dart' as vm_service;
 
 import 'runner.dart';
+import 'test_info.dart';
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
 class TestIsolate {
@@ -18,8 +19,6 @@ class TestIsolate {
   }) : _testRunner = testRunner;
 
   final TestRunner _testRunner;
-  final _libraries = <String, vm_service.Library>{};
-  vm_service.Library _mainLibrary;
   vm_service.IsolateRef _testIsolateRef;
   vm_service.VmService _vmService;
   StreamSubscription<void> _extensionSubscription;
@@ -41,9 +40,7 @@ class TestIsolate {
       await _vmService.resume(isolate.id);
     }
 
-    await _reloadLibraries();
     await _vmService.streamListen('Stdout');
-
     _logSubscription = _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
@@ -61,58 +58,34 @@ class TestIsolate {
   /// Runs all tests defined and streams the results.
   ///
   /// The order of test invocation is not currently defined.
-  Stream<TestResult> runAllTests() {
+  Stream<TestResult> runAllTests(Map<Uri, List<TestInfo>> testInformation) {
     var controller = StreamController<TestResult>();
     var pending = <Future<void>>[];
-    for (var libraryEntry in _libraries.entries) {
-      if (!libraryEntry.key.endsWith('_test.dart')) {
-        continue;
-      }
-      for (var functionRef in libraryEntry.value.functions) {
-        if (!functionRef.isStatic) {
-          continue;
-        }
-        if (functionRef.name.startsWith('test')) {
-          pending
-              .add(runTest(functionRef.name, libraryEntry.key).then((result) {
-            controller.add(result);
-          }));
-        }
+    for (var testFileUri in testInformation.keys) {
+      for (var testInfo in testInformation[testFileUri]) {
+        pending.add(runTest(testInfo).then(controller.add));
       }
     }
     Future.wait(pending).whenComplete(controller.close);
     return controller.stream;
   }
 
-  /// Execute [testName] within [testLibrary].
-  ///
-  /// Throws an [Exception] if either the [testName] does not exist in the
-  /// [testLibrary], or if the [testLibrary] does not exist.
-  // This should cache the [Library] objects so that runAll is more efficient.
-  Future<TestResult> runTest(String testName, String libraryUri) async {
-    var testLibrary = _libraries[libraryUri];
-    if (testLibrary == null) {
-      throw Exception('No library $libraryUri defined');
-    }
-
-    var funcRef = testLibrary.functions
-        .firstWhere((element) => element.name == testName, orElse: () => null);
-    if (funcRef == null) {
-      throw Exception('No test $testName defined');
-    }
-
+  Future<TestResult> runTest(TestInfo testInfo) async {
     Map<String, Object> result;
     try {
       result = (await _vmService.callServiceExtension(
         'ext.callTest',
         isolateId: _testIsolateRef.id,
-        args: <String, String>{'test': testName, 'library': libraryUri},
+        args: <String, String>{
+          'test': testInfo.name,
+          'library': testInfo.testFileUri.toString(),
+        },
       ))
           .json;
     } on vm_service.RPCError catch (err, st) {
       return TestResult(
-        testFile: libraryUri,
-        testName: '',
+        testFileUri: testInfo.testFileUri,
+        testName: testInfo.name,
         passed: false,
         timeout: false,
         errorMessage: err.toString(),
@@ -122,7 +95,7 @@ class TestIsolate {
 
     return TestResult.fromMessage(
       result,
-      libraryUri,
+      testInfo.testFileUri,
     );
   }
 
@@ -132,42 +105,13 @@ class TestIsolate {
       _testIsolateRef.id,
       rootLibUri: incrementalDill.toString(),
     );
-    await _reloadLibraries();
-  }
-
-  Future<void> _reloadLibraries() async {
-    _libraries.clear();
-    _mainLibrary = null;
-    var scripts = await _vmService.getScripts(_testIsolateRef.id);
-    for (var scriptRef in scripts.scripts) {
-      var uri = Uri.parse(scriptRef.uri);
-      if (uri.scheme == 'dart') {
-        continue;
-      }
-      var script = await _vmService.getObject(
-        _testIsolateRef.id,
-        scriptRef.id,
-      ) as vm_service.Script;
-      var testLibrary = await _vmService.getObject(
-        _testIsolateRef.id,
-        script.library.id,
-      ) as vm_service.Library;
-      if (script.library.uri.endsWith('main.dart')) {
-        _mainLibrary = testLibrary;
-      }
-      _libraries[script.library.uri] = testLibrary;
-    }
-
-    if (_mainLibrary == null) {
-      throw StateError('no main library found');
-    }
   }
 }
 
 /// The result of a test execution.
 class TestResult {
   const TestResult({
-    @required this.testFile,
+    @required this.testFileUri,
     @required this.testName,
     @required this.passed,
     @required this.timeout,
@@ -177,9 +121,9 @@ class TestResult {
 
   /// Create a [TestResult] from the raw JSON [message].
   factory TestResult.fromMessage(
-      Map<dynamic, dynamic> message, String testFile) {
+      Map<dynamic, dynamic> message, Uri testFileUri) {
     return TestResult(
-      testFile: testFile,
+      testFileUri: testFileUri,
       testName: message['test'] as String,
       passed: message['passed'] as bool,
       timeout: message['timeout'] as bool,
@@ -189,7 +133,7 @@ class TestResult {
   }
 
   /// The absolute file URI of the test.
-  final String testFile;
+  final Uri testFileUri;
 
   /// The name of the test function.
   final String testName;

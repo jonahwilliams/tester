@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
+import 'package:tester/src/test_info.dart';
 
 import 'src/compiler.dart';
 import 'src/config.dart';
@@ -21,7 +22,14 @@ void runApplication({
     config: config,
     compilerMode: config.targetPlatform,
   );
-  var result = await compiler.start();
+  var infoProvider = TestInformationProvider();
+
+  var testInformation = <Uri, List<TestInfo>>{};
+  for (var testFileUri in config.tests) {
+    testInformation[testFileUri] = infoProvider.collectTestInfo(testFileUri);
+  }
+
+  var result = await compiler.start(testInformation);
   if (result == null) {
     return;
   }
@@ -54,11 +62,13 @@ void runApplication({
     exit(1);
   }
 
-  await for (var testResult in testIsolate.runAllTests()) {
+  await for (var testResult in testIsolate.runAllTests(testInformation)) {
     var humanFileName = path.relative(
-      Uri.parse(testResult.testFile).toFilePath(),
+      testResult.testFileUri.toFilePath(),
       from: config.workspacePath,
     );
+    var testInfo = testInformation[testResult.testFileUri]
+      .firstWhere((info) => info.name == testResult.testName);
     if (testResult.passed == true) {
       print('PASS    $humanFileName/${testResult.testName}');
       continue;
@@ -66,6 +76,10 @@ void runApplication({
     if (!testResult.passed && !testResult.timeout) {
       exitCode = 1;
       print('FAIL    $humanFileName/${testResult.testName}');
+      print('');
+      if (testInfo.description.isNotEmpty) {
+        print(testInfo.description);
+      }
       print(testResult.errorMessage);
       print(testResult.stackTrace);
       continue;
