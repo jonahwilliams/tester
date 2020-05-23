@@ -30,9 +30,9 @@ class Resident {
     if (result != null) {
       await testIsolate.reload(result);
     }
-    await for (var testResult in testIsolate.runAllTests()) {
+    await for (var testResult in testIsolate.runAllTests({})) {
       var humanFileName = path.relative(
-        Uri.parse(testResult.testFile).toFilePath(),
+        testResult.testFileUri.toFilePath(),
         from: config.workspacePath,
       );
       // Pass

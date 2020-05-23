@@ -11,7 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 import 'config.dart';
-import 'analyzer.dart';
+import 'test_info.dart';
 
 const _testMain = r'''
 import 'dart:convert';
@@ -77,8 +77,7 @@ class Compiler {
   File _mainFile;
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
-  Future<Uri> start() async {
-    var analyzer = const Analyzer();
+  Future<Uri> start(Map<Uri, List<TestInfo>> testInformation) async {
     var workspace = Directory(config.workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
@@ -86,17 +85,15 @@ class Compiler {
     _mainFile = File(path.join(workspace.path, 'main.dart'));
 
     var contents = StringBuffer();
-    var testsByFile = <Uri, List<String>>{};
-    for (var testPath in config.tests) {
-      testsByFile[testPath] = analyzer.collectTestNames(testPath.toFilePath());
-      contents.writeln('import "${testPath}";');
+    for (var testFileUri in testInformation.keys) {
+      contents.writeln('import "${testFileUri}";');
     }
     contents.write(_testMain);
     contents.writeln('var testRegistry = {');
-    for (var testPath in testsByFile.keys) {
-      contents.writeln('"${testPath}": {');
-      for (var testName in testsByFile[testPath]) {
-        contents.writeln('"${testName}": $testName,');
+    for (var testFileUri in testInformation.keys) {
+      contents.writeln('"${testFileUri}": {');
+      for (var testInfo in testInformation[testFileUri]) {
+        contents.writeln('"${testInfo.name}": ${testInfo.name},');
       }
       contents.writeln('},');
     }

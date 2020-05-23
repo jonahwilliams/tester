@@ -83,6 +83,7 @@ class VmTestRunner implements TestRunner {
       uniqueFile.deleteSync();
     }
     _process = await Process.start(dartExecutable, <String>[
+      '--disable-dart-dev',
       '--enable-vm-service=0',
       '--write-service-info=${uniqueFile.path}',
       entrypoint.toString(),
@@ -205,7 +206,7 @@ class ChromeTestRunner extends TestRunner {
 
   @override
   FutureOr<void> dispose() async {
-    await _dwds.stop();
+    // await _dwds.stop();
     await _httpServer.close();
     _chromeProcess.kill();
     await _chromeProcess.exitCode;

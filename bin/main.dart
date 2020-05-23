@@ -25,12 +25,25 @@ final argParser = ArgParser()
 
 Future<void> main(List<String> args) async {
   var argResults = argParser.parse(args);
-  var flutterRoot = File(Platform.resolvedExecutable)
-    .parent
-    .parent
-    .parent
-    .parent
-    .parent.path;
+  String flutterRoot;
+  if (Platform.isWindows) {
+    flutterRoot = File((await Process.run('where', <String>['flutter']))
+            .stdout
+            .split('\n')
+            .first as String)
+        .parent
+        .parent
+        .path;
+  } else {
+    flutterRoot = File((await Process.run('which', <String>['flutter']))
+            .stdout
+            .split('\n')
+            .first as String)
+        .parent
+        .parent
+        .path;
+  }
+
   String cacheName;
   if (Platform.isMacOS) {
     cacheName = 'darwin-x64';
@@ -49,7 +62,8 @@ Future<void> main(List<String> args) async {
         .map((path) => File(path).uri)
         .toList();
   } else {
-    tests = Directory(path.join(argResults['project-root'] as String ?? '.', 'test'))
+    tests = Directory(
+            path.join(argResults['project-root'] as String ?? '.', 'test'))
         .listSync(recursive: true)
         .whereType<File>()
         .where((file) => file.path.endsWith('_test.dart'))
@@ -63,70 +77,68 @@ Future<void> main(List<String> args) async {
   runApplication(
     batchMode: argResults['batch'] as bool,
     config: Config(
-      targetPlatform: TargetPlatform
-          .values[_allowedPlatforms.indexOf(argResults['platform'] as String)],
-      workspacePath: projectDirectory,
-      packageRootPath: projectDirectory,
-      tests: tests,
-      frontendServerPath: path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'artifacts',
-        'engine',
-        cacheName,
-        'frontend_server.dart.snapshot',
-      ),
-      dartPath: path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'dart-sdk',
-        'bin',
-        'dart',
-      ),
-      dartSdkRoot: path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'dart-sdk',
-      ),
-      platformDillUri: File(path.join(
-            flutterRoot,
-            'bin',
-            'cache',
-            'dart-sdk',
-            'lib',
-            '_internal',
-            'vm_platform_strong.dill',
-          ))
-          .uri,
-      flutterPatchedSdkRoot: path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'artifacts',
-        'engine',
-        'common',
-        'flutter_patched_sdk',
-      ),
-      flutterTesterPath: path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'artifacts',
-        'engine',
-        cacheName,
-        'flutter_tester',
-      ),
-      flutterWebPlatformDillUri: File(path.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'flutter_web_sdk',
-        'kernel',
-        'flutter_ddc_sdk.dill',
-      )).uri
-    ),
+        targetPlatform: TargetPlatform.values[
+            _allowedPlatforms.indexOf(argResults['platform'] as String)],
+        workspacePath: projectDirectory,
+        packageRootPath: projectDirectory,
+        tests: tests,
+        frontendServerPath: path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'artifacts',
+          'engine',
+          cacheName,
+          'frontend_server.dart.snapshot',
+        ),
+        dartPath: path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'dart-sdk',
+          'bin',
+          'dart',
+        ),
+        dartSdkRoot: path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'dart-sdk',
+        ),
+        platformDillUri: File(path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'dart-sdk',
+          'lib',
+          '_internal',
+          'vm_platform_strong.dill',
+        )).uri,
+        flutterPatchedSdkRoot: path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'artifacts',
+          'engine',
+          'common',
+          'flutter_patched_sdk',
+        ),
+        flutterTesterPath: path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'artifacts',
+          'engine',
+          cacheName,
+          'flutter_tester',
+        ),
+        flutterWebPlatformDillUri: File(path.join(
+          flutterRoot,
+          'bin',
+          'cache',
+          'flutter_web_sdk',
+          'kernel',
+          'flutter_ddc_sdk.dill',
+        )).uri),
   );
 }
