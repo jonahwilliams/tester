@@ -6,6 +6,8 @@ environment:
   sdk: '>=2.8.0 <3.0.0'
 
 dependencies:
+  stack_trace: 1.9.3
+  dart_console: 0.6.0
   vm_service: 4.0.4
   package_config: 1.9.3
   uuid: 2.0.4

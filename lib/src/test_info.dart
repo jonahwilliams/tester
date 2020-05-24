@@ -24,7 +24,7 @@ class TestInformationProvider {
       includeComments: true,
     );
     var firstToken = scanner.tokenize();
-    var collector = TestNameCollector(testFileUri);
+    var collector = TestNameCollector(testFileUri, firstToken);
     Parser(collector).parseUnit(firstToken);
     return collector.testInfo;
   }
@@ -35,11 +35,13 @@ class TestInfo {
     this.name,
     this.description,
     this.testFileUri,
+    this.testToken,
   });
 
   final String name;
   final String description;
   final Uri testFileUri;
+  final Token testToken;
 }
 
 /// Collect the names of top level methods that begin with tests.
@@ -47,9 +49,10 @@ class TestInfo {
 /// If there is a block comment prior to the test with a `[test]` string,
 /// include that as the test description.
 class TestNameCollector extends Listener {
-  TestNameCollector(this.testFileUri);
+  TestNameCollector(this.testFileUri, this.testToken);
 
   final Uri testFileUri;
+  final Token testToken;
 
   final testInfo = <TestInfo>[];
 
@@ -82,6 +85,7 @@ class TestNameCollector extends Listener {
       name: name,
       description: description.toString(),
       testFileUri: testFileUri,
+      testToken: testToken,
     ));
   }
 }

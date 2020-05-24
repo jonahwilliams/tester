@@ -14,14 +14,13 @@ const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
 
 final argParser = ArgParser()
   ..addFlag('batch', abbr: 'b', help: 'Whether to run tests in batch mode.')
-  ..addOption('project-root', help: 'The path to the project under test')
+  ..addFlag('verbose', abbr: 'v')
   ..addOption(
     'platform',
     help: 'The platform to run tests on.',
     allowed: _allowedPlatforms,
     defaultsTo: 'dart',
-  )
-  ..addMultiOption('test');
+  );
 
 Future<void> main(List<String> args) async {
   var argResults = argParser.parse(args);
@@ -56,23 +55,15 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  List<Uri> tests;
-  if (argResults.wasParsed('test')) {
-    tests = (argResults['test'] as List<String>)
-        .map((path) => File(path).uri)
-        .toList();
-  } else {
-    tests = Directory(
-            path.join(argResults['project-root'] as String ?? '.', 'test'))
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((file) => file.path.endsWith('_test.dart'))
-        .map((file) => file.absolute.uri)
-        .toList();
-  }
+  var projectDirectory = argResults.rest.first ?? Directory.current.path;
 
-  var projectDirectory =
-      argResults['project-root'] as String ?? Directory.current.path;
+  final tests = Directory(path.join(projectDirectory, 'test'))
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((file) => file.path.endsWith('_test.dart'))
+      .map((file) => file.absolute.uri)
+      .toList();
+
   var workspace =
       Directory(path.join(projectDirectory, '.dart_tool', 'tester'));
   if (!workspace.existsSync()) {
@@ -80,6 +71,7 @@ Future<void> main(List<String> args) async {
   }
 
   runApplication(
+    verbose: argResults['verbose'] as bool,
     batchMode: argResults['batch'] as bool,
     config: Config(
         targetPlatform: TargetPlatform.values[
