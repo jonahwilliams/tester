@@ -5,15 +5,16 @@
 import 'dart:io';
 
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
 import 'package:tester/src/test_info.dart';
 
 import 'src/compiler.dart';
 import 'src/config.dart';
 import 'src/isolate.dart';
 import 'src/runner.dart';
+import 'src/writer.dart';
 
 void runApplication({
+  @required bool verbose,
   @required bool batchMode,
   @required Config config,
 }) async {
@@ -62,39 +63,16 @@ void runApplication({
     exit(1);
   }
 
-  var failed = 0;
-  var passed = 0;
+  var writer = TerminalTestWriter(
+    projectRoot: config.packageRootPath,
+    verbose: verbose,
+  );
+  writer.writeHeader();
   await for (var testResult in testIsolate.runAllTests(testInformation)) {
-    var humanFileName = path.relative(
-      testResult.testFileUri.toFilePath(),
-      from: config.workspacePath,
-    );
     var testInfo = testInformation[testResult.testFileUri]
         .firstWhere((info) => info.name == testResult.testName);
-    if (testResult.passed == true) {
-      passed += 1;
-      print('PASS    $humanFileName/${testResult.testName}');
-      print('');
-      if (testInfo.description.isNotEmpty) {
-        print(testInfo.description);
-      }
-      continue;
-    }
-    if (!testResult.passed && !testResult.timeout) {
-      failed += 1;
-      exitCode = 1;
-      print('FAIL    $humanFileName/${testResult.testName}');
-      print('');
-      if (testInfo.description.isNotEmpty) {
-        print(testInfo.description);
-      }
-      print(testResult.errorMessage);
-      print(testResult.stackTrace);
-      continue;
-    }
-    print('TIMEOUT    $humanFileName/${testResult.testName}');
-    exitCode = 1;
+    writer.writeTest(testResult, testInfo);
   }
-  print('${passed}/${passed + failed} tests passed.');
-  exit(exitCode);
+  writer.writeSummary();
+  exit(writer.exitCode);
 }

@@ -12,7 +12,7 @@ Object testReturnObject() {
 
 /// Tests that a sync exception causes a test failure.
 void testSyncException() {
-  throw Exception();
+  throw Exception('Expected 1 == 2 but was false.');
 }
 
 /// Tests that a sync error causes a test failure.
