@@ -73,13 +73,18 @@ Future<void> main(List<String> args) async {
 
   var projectDirectory =
       argResults['project-root'] as String ?? Directory.current.path;
+  var workspace =
+      Directory(path.join(projectDirectory, '.dart_tool', 'tester'));
+  if (!workspace.existsSync()) {
+    workspace.createSync(recursive: true);
+  }
 
   runApplication(
     batchMode: argResults['batch'] as bool,
     config: Config(
         targetPlatform: TargetPlatform.values[
             _allowedPlatforms.indexOf(argResults['platform'] as String)],
-        workspacePath: projectDirectory,
+        workspacePath: workspace.path,
         packageRootPath: projectDirectory,
         tests: tests,
         frontendServerPath: path.join(

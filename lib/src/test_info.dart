@@ -67,22 +67,14 @@ class TestNameCollector extends Listener {
     if (!name.startsWith('test')) {
       return;
     }
-    // Check the previous token for a comment and include if `[test]` present.
-    // The seenMarker check is necessary to avoid including file license headers
-    // in the comments for the first test in each file.
+    // Check the previous token for a comment and include if  a doc comment `///`
+    // is present.
     var description = StringBuffer();
     var comment = beginToken.precedingComments;
-    var seenMarker = false;
     while (comment != null) {
       var content = comment.toString();
-      if (content.contains('[test]')) {
-        seenMarker = true;
-      }
       if (content.startsWith('///')) {
-        content = content.substring(3);
-      }
-      if (seenMarker) {
-        description.writeln(content.trim());
+        description.writeln(content.substring(3).trim());
       }
       comment = comment.next as CommentToken;
     }

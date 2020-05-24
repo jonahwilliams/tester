@@ -62,18 +62,26 @@ void runApplication({
     exit(1);
   }
 
+  var failed = 0;
+  var passed = 0;
   await for (var testResult in testIsolate.runAllTests(testInformation)) {
     var humanFileName = path.relative(
       testResult.testFileUri.toFilePath(),
       from: config.workspacePath,
     );
     var testInfo = testInformation[testResult.testFileUri]
-      .firstWhere((info) => info.name == testResult.testName);
+        .firstWhere((info) => info.name == testResult.testName);
     if (testResult.passed == true) {
+      passed += 1;
       print('PASS    $humanFileName/${testResult.testName}');
+      print('');
+      if (testInfo.description.isNotEmpty) {
+        print(testInfo.description);
+      }
       continue;
     }
     if (!testResult.passed && !testResult.timeout) {
+      failed += 1;
       exitCode = 1;
       print('FAIL    $humanFileName/${testResult.testName}');
       print('');
@@ -87,5 +95,6 @@ void runApplication({
     print('TIMEOUT    $humanFileName/${testResult.testName}');
     exitCode = 1;
   }
+  print('${passed}/${passed + failed} tests passed.');
   exit(exitCode);
 }

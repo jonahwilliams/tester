@@ -2,25 +2,50 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// [test] This is a test. it will pass since there is never a thrown
-/// condition, even though it isn't really "testing" anything at all.
-void testThatOneIsOne() {
-  if (1 == 1) {
-    throw Exception('bad222');
-  }
+/// Tests that a sync function completes normally
+void testNoException() {}
+
+/// Tests that a sync function that returns an object completes normally.
+Object testReturnObject() {
+  return Object();
 }
 
-/// [test] This is a test.
-Future<void> testFoo() async {
-  await Future<void>.delayed(const Duration(milliseconds: 5));
-  if ('asdsaad'.isNotEmpty) {
-    throw Exception('');
-  }
+/// Tests that a sync exception causes a test failure.
+void testSyncException() {
+  throw Exception();
 }
 
-/// [test] This is a test.
-void testSomethingElse() {
-  if ('aasdasd' == 'adad') {
-    throw Exception();
-  }
+/// Tests that a sync error causes a test failure.
+void testSyncError() {
+  throw Error();
+}
+
+/// Tests that a sync function that throws an object causes a test failure.
+void testSyncThrownObject() {
+  throw Object();
+}
+
+/// Tests that an async function with no errors completes successfully.
+Future<void> testAsyncNoException() async {
+  await null;
+}
+
+/// Tests that an async function that returns an object completes successfully.
+Future<Object> testAsyncReturnValues() async {
+  await null;
+  return Object();
+}
+
+/// Tests that an async function that completes with an exception causes a test
+/// failure.
+Future<void> testAsyncException() async {
+  await null;
+  throw Exception();
+}
+
+/// Tests that an async function that completes with an error causes a test
+/// failure.
+Future<void> testAsyncError() async {
+  await null;
+  throw Error();
 }

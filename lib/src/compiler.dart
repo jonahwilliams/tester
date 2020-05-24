@@ -23,15 +23,11 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
   var testFunction = testRegistry[libraryUri][name];
 
   var passed = false;
-  var timeout = false;
   dynamic error;
   dynamic stackTrace;
   try {
-    await Future(() => testFunction())
-      .timeout(const Duration(seconds: 15));
+    await Future(() => testFunction());
     passed = true;
-  } on TimeoutException {
-    timeout = true;
   } catch (err, st) {
     error = err;
     stackTrace = st;
@@ -39,7 +35,7 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
     return <String, Object>{
       'test': name,
       'passed': passed,
-      'timeout': timeout,
+      'timeout': false,
       'error': error?.toString(),
       'stackTrace': stackTrace?.toString(),
     };
@@ -102,7 +98,7 @@ class Compiler {
     _mainFile.writeAsStringSync(contents.toString());
 
     var dillOutput =
-        File(path.join(config.packageRootPath, 'main.dart.dill')).absolute;
+        File(path.join(config.workspacePath, 'main.dart.dill')).absolute;
 
     _stdoutHandler = StdoutHandler();
     _projectFileInvalidator = ProjectFileInvalidator();
