@@ -18,6 +18,12 @@ class Config {
     @required this.targetPlatform,
     @required this.flutterTesterPath,
     @required this.flutterWebPlatformDillUri,
+    @required this.flutterWebDartSdk,
+    @required this.flutterWebDartSdkSourcemaps,
+    @required this.webDartSdk,
+    @required this.webDartSdkSourcemaps,
+    @required this.stackTraceMapper,
+    @required this.requireJS,
   });
 
   /// The file path to the dart executable.
@@ -56,6 +62,15 @@ class Config {
 
   /// The path to the flutter test device.
   final String flutterTesterPath;
+
+  final String flutterWebDartSdk;
+  final String flutterWebDartSdkSourcemaps;
+
+  final String webDartSdk;
+  final String webDartSdkSourcemaps;
+
+  final String stackTraceMapper;
+  final String requireJS;
 }
 
 /// The compiler configuration for the targeted platform.

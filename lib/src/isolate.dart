@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart' as vm_service;
@@ -11,20 +12,36 @@ import 'package:vm_service/vm_service_io.dart' as vm_service;
 
 import 'runner.dart';
 import 'test_info.dart';
+import 'web_runner.dart';
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
-class TestIsolate {
-  TestIsolate({
+abstract class TestIsolate {
+
+  /// Start the test isolate.
+  Future<void> start(Uri entrypoint, void Function() onExit);
+
+  /// Tear down the test isolate.
+  FutureOr<void> dispose();
+
+  /// Execute [testInfo]
+  Future<TestResult> runTest(TestInfo testInfo);
+
+  /// Reload the application with the incremental file defined at `incrementalDill`.
+  Future<void> reload(Uri incrementalDill);
+}
+
+/// The isolate under test and manager of the [TestRunner] lifecycle.
+class VmTestIsolate extends TestIsolate {
+  VmTestIsolate({
     @required TestRunner testRunner,
   }) : _testRunner = testRunner;
 
   final TestRunner _testRunner;
   vm_service.IsolateRef _testIsolateRef;
   vm_service.VmService _vmService;
-  StreamSubscription<void> _extensionSubscription;
   StreamSubscription<void> _logSubscription;
 
-  /// Start the test isolate.
+  @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
     var launchResult = await _testRunner.start(entrypoint, onExit);
     var websocketUrl =
@@ -47,14 +64,14 @@ class TestIsolate {
     });
   }
 
-  /// Tear down the test isolate.
+  @override
   FutureOr<void> dispose() {
-    _extensionSubscription.cancel();
-    _logSubscription.cancel();
-    _vmService.dispose();
-    return _testRunner.dispose();
+    _logSubscription?.cancel();
+    _vmService?.dispose();
+    return _testRunner?.dispose();
   }
 
+  @override
   Future<TestResult> runTest(TestInfo testInfo) async {
     Map<String, Object> result;
     try {
@@ -84,11 +101,86 @@ class TestIsolate {
     );
   }
 
-  /// Reload the application with the incremental file defined at `incrementalDill`.
+  @override
   Future<void> reload(Uri incrementalDill) async {
     await _vmService.reloadSources(
       _testIsolateRef.id,
       rootLibUri: incrementalDill.toString(),
+    );
+  }
+}
+
+class WebTestIsolate extends TestIsolate {
+  WebTestIsolate({
+    @required this.testRunner,
+  });
+
+  final ChromeTestRunner testRunner;
+  vm_service.VmService _vmService;
+  StreamSubscription<void> _logSubscription;
+
+  @override
+  Future<void> start(Uri entrypoint, void Function() onExit) async {
+    var codeFile = File(entrypoint.toFilePath() + '.sources');
+    var manifestFile = File(entrypoint.toFilePath() + '.json');
+    var sourceMapFile = File(entrypoint.toFilePath() + '.map');
+
+    testRunner.updateCode(codeFile, manifestFile, sourceMapFile);
+
+    await testRunner.start(entrypoint, onExit);
+    _vmService = testRunner.vmService;
+
+    await _vmService.streamListen('Stdout');
+    _logSubscription = _vmService.onStdoutEvent.listen((event) {
+      var message = utf8.decode(base64.decode(event.bytes));
+      print(message);
+    });
+  }
+
+  @override
+  FutureOr<void> dispose() async {
+    await _logSubscription?.cancel();
+    await testRunner.dispose();
+  }
+
+  @override
+  Future<void> reload(Uri incrementalDill) async {
+    var codeFile = File(incrementalDill.toFilePath() + '.sources');
+    var manifestFile = File(incrementalDill.toFilePath() + '.json');
+    var sourceMapFile = File(incrementalDill.toFilePath() + '.map');
+
+    testRunner.updateCode(codeFile, manifestFile, sourceMapFile);
+
+    await _vmService.callMethod('hotRestart');
+  }
+
+  @override
+  Future<TestResult> runTest(TestInfo testInfo) async {
+    Map<String, Object> result;
+    try {
+      result = (await _vmService.callServiceExtension(
+        'ext.callTest',
+        // isolateId: _testIsolateRef.id,
+        args: <String, String>{
+          'test': testInfo.name,
+          'library': testInfo.testFileUri.toString(),
+        },
+      ))
+          .json;
+    } on vm_service.RPCError catch (err, st) {
+      return TestResult(
+        testFileUri: testInfo.testFileUri,
+        testName: testInfo.name,
+        passed: false,
+        timeout: false,
+        errorMessage: err.toString(),
+        stackTrace: st.toString(),
+      );
+    }
+
+    return TestResult.fromMessage(
+      result,
+      testInfo.testFileUri,
     );
   }
 }
