@@ -83,13 +83,13 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
 }
 
 Future<void> main() async {
-  await ui.webOnlyInitializePlatform();
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
     final result = await executeTest(test, library);
     return ServiceExtensionResponse.result(json.encode(result));
   });
+  await ui.webOnlyInitializePlatform();
 }
 
 ''';
@@ -173,12 +173,17 @@ class Compiler {
     _stdoutHandler.reset();
     var pendingResult = _stdoutHandler.compilerOutput.future;
     var id = Uuid().v4();
-    _frontendServer.stdin.writeln('recompile ${_mainFile.absolute.uri} $id');
+    _frontendServer.stdin
+        .writeln('recompile org-dartlang-app:///main.dart $id');
 
     for (var uri in invalidated) {
-      _frontendServer.stdin.writeln(uri.toString());
+      var relativePath = path.relative(
+        uri.toFilePath(),
+        from: path.join(config.packageRootPath, 'test'),
+      );
+      _frontendServer.stdin.writeln('org-dartlang-app:///$relativePath');
     }
-    _frontendServer.stdin.writeln(_mainFile.absolute.uri.toString());
+    _frontendServer.stdin.writeln('org-dartlang-app:///main.dart');
     _frontendServer.stdin.writeln(id);
     var result = await pendingResult;
     if (result.errorCount != 0) {

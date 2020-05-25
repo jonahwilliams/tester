@@ -289,7 +289,7 @@ packages:
     source: hosted
     version: "0.1.0+7"
   shelf_static:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: shelf_static
       url: "https://pub.dartlang.org"

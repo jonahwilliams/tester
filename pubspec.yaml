@@ -6,8 +6,7 @@ environment:
   sdk: '>=2.8.0 <3.0.0'
 
 dependencies:
-  shelf:
-  shelf_static:
+  shelf: 0.7.5
   stream_transform: 1.2.0
   watcher: '0.9.7+15'
   stack_trace: 1.9.3

@@ -16,7 +16,6 @@ import 'web_runner.dart';
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
 abstract class TestIsolate {
-
   /// Start the test isolate.
   Future<void> start(Uri entrypoint, void Function() onExit);
 
@@ -151,7 +150,12 @@ class WebTestIsolate extends TestIsolate {
 
     testRunner.updateCode(codeFile, manifestFile, sourceMapFile);
 
-    await _vmService.callMethod('hotRestart');
+    try {
+      await _vmService.callMethod('hotRestart');
+    } catch (err, st) {
+      print(err);
+      print(st);
+    }
   }
 
   @override

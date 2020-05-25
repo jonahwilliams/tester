@@ -128,23 +128,23 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
     var chromeConnection = Completer<ChromeConnection>();
     _dwds = await Dwds.start(
-      assetReader: this,
-      buildResults: const Stream.empty(),
-      chromeConnection: () {
-        return chromeConnection.future;
-      },
-      serveDevTools: false,
-      enableDebugging: true,
-      loadStrategy: RequireStrategy(
-        ReloadConfiguration.none,
-        '.lib.js',
-        moduleProvider,
-        digestProvider,
-        moduleForServerPath,
-        serverPathForModule,
-        serverPathForAppUri,
-      ),
-    );
+        assetReader: this,
+        buildResults: const Stream.empty(),
+        chromeConnection: () {
+          return chromeConnection.future;
+        },
+        serveDevTools: false,
+        enableDebugging: true,
+        loadStrategy: RequireStrategy(
+          ReloadConfiguration.none,
+          '.lib.js',
+          moduleProvider,
+          digestProvider,
+          moduleForServerPath,
+          serverPathForModule,
+          serverPathForAppUri,
+        ),
+        logWriter: (level, message) {});
 
     var serverPort = await findFreePort();
     _httpServer = await HttpServer.bind('localhost', serverPort);
@@ -174,7 +174,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       '--no-default-browser-check',
       '--disable-default-apps',
       '--disable-translate',
-      '--headless',
+      // '--headless',
       '--disable-gpu',
       '--no-sandbox',
       '--window-size=2400,1800',

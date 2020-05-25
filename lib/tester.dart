@@ -102,5 +102,6 @@ void runApplication({
     testIsolate: testIsolate,
     writer: writer,
   );
+  print('READY');
   await resident.start();
 }

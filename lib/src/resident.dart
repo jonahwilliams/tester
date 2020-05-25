@@ -56,8 +56,6 @@ class Resident {
     controller.stream
         .debounce(const Duration(milliseconds: 100))
         .listen((WatchEvent event) async {
-      print(event.path);
-      print(path.extension(event.path));
       if (path.extension(event.path) != '.dart') {
         return;
       }
