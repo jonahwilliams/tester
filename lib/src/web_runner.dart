@@ -15,6 +15,7 @@ import 'package:path/path.dart' as path;
 import 'package:vm_service/vm_service.dart';
 import 'package:webkit_inspection_protocol/webkit_inspection_protocol.dart';
 
+import 'config.dart';
 import 'runner.dart';
 
 /// A test runner that spawns chrome and a dwds process.
@@ -24,6 +25,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     @required this.dartSdkSourcemap,
     @required this.stackTraceMapper,
     @required this.requireJS,
+    @required this.config,
   });
 
   /// The expected executable name on linux.
@@ -50,6 +52,8 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   Directory _chromeTempProfile;
   HttpServer _httpServer;
   VmService vmService;
+
+  final Config config;
   final File dartSdkFile;
   final File dartSdkSourcemap;
   final File stackTraceMapper;
@@ -85,7 +89,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       mapperUrl: 'stack_trace_mapper.js',
     )) as Uint8List;
     files['main_module.bootstrap.js'] = utf8.encode(generateMainModule(
-      entrypoint: 'main.dart.lib.js',
+      entrypoint: 'tester/main.dart',
     )) as Uint8List;
 
     // Return the set of all active modules. This is populated by the
@@ -174,7 +178,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       '--no-default-browser-check',
       '--disable-default-apps',
       '--disable-translate',
-      // '--headless',
+      '--headless',
       '--disable-gpu',
       '--no-sandbox',
       '--window-size=2400,1800',
@@ -268,21 +272,10 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
   @override
   Future<String> dartSourceContents(String serverPath) async {
-    return null;
-    // if (!serverPath.endsWith('.dart')) return null;
-    // var packageConfig = await _packageConfig;
-
-    // Uri fileUri;
-    // if (serverPath.startsWith('packages/')) {
-    //   var packagePath = serverPath.replaceFirst('packages/', 'package:');
-    //   fileUri = packageConfig.resolve(Uri.parse(packagePath));
-    // } else {
-    //   fileUri = path.toUri(path.join(_packageRoot, serverPath));
-    // }
-
-    // var source = File(fileUri.toFilePath());
-    // if (!await source.exists()) return null;
-    // return await source.readAsString();
+    if (!serverPath.endsWith('.dart')) return null;
+    print(serverPath);
+    return File(path.join(config.packageRootPath, serverPath))
+        .readAsStringSync();
   }
 
   @override

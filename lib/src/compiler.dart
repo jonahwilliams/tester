@@ -139,9 +139,9 @@ class Compiler {
       '--output-dill=${dillOutput.path}',
       '--incremental',
       '--filesystem-root',
-      Directory(config.workspacePath).absolute.path,
+      Directory(config.workspacePath).parent.absolute.path,
       '--filesystem-root',
-      path.join(config.packageRootPath, 'test'),
+      path.join(config.packageRootPath),
       '--filesystem-scheme',
       'org-dartlang-app',
     ];
@@ -154,7 +154,8 @@ class Compiler {
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen(_stdoutHandler.handler);
-    _frontendServer.stdin.writeln('compile org-dartlang-app:///main.dart');
+    _frontendServer.stdin
+        .writeln('compile org-dartlang-app:///tester/main.dart');
     var result = await _stdoutHandler.compilerOutput.future;
     if (result.errorCount != 0) {
       return null;
@@ -174,16 +175,16 @@ class Compiler {
     var pendingResult = _stdoutHandler.compilerOutput.future;
     var id = Uuid().v4();
     _frontendServer.stdin
-        .writeln('recompile org-dartlang-app:///main.dart $id');
+        .writeln('recompile org-dartlang-app:///tester/main.dart $id');
 
     for (var uri in invalidated) {
       var relativePath = path.relative(
         uri.toFilePath(),
-        from: path.join(config.packageRootPath, 'test'),
+        from: config.packageRootPath,
       );
       _frontendServer.stdin.writeln('org-dartlang-app:///$relativePath');
     }
-    _frontendServer.stdin.writeln('org-dartlang-app:///main.dart');
+    _frontendServer.stdin.writeln('org-dartlang-app:///tester/main.dart');
     _frontendServer.stdin.writeln(id);
     var result = await pendingResult;
     if (result.errorCount != 0) {
@@ -238,7 +239,7 @@ class Compiler {
     for (var testFileUri in testInformation.keys) {
       var relativePath = path.relative(
         testFileUri.toFilePath(),
-        from: path.join(config.packageRootPath, 'test'),
+        from: config.packageRootPath,
       );
       contents.writeln('import "org-dartlang-app:///$relativePath";');
     }

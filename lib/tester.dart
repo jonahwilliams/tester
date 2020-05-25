@@ -58,6 +58,7 @@ void runApplication({
         dartSdkSourcemap: File(config.webDartSdkSourcemaps),
         stackTraceMapper: File(config.stackTraceMapper),
         requireJS: File(config.requireJS),
+        config: config,
       );
       testIsolate = WebTestIsolate(testRunner: testRunner);
       break;
@@ -67,6 +68,7 @@ void runApplication({
         dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
         stackTraceMapper: File(config.stackTraceMapper),
         requireJS: File(config.requireJS),
+        config: config,
       );
       testIsolate = WebTestIsolate(testRunner: testRunner);
       break;
