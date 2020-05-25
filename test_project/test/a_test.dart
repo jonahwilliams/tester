@@ -30,7 +30,7 @@ Future<void> testAsyncNoException() async {
   await null;
 }
 
-/// Tests that an async function that returns an object completes successfully.
+/// Tests that assn async function that returns an object completes successfully.
 Future<Object> testAsyncReturnValues() async {
   await null;
   return Object();
