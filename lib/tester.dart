@@ -5,13 +5,14 @@
 import 'dart:io';
 
 import 'package:meta/meta.dart';
-import 'package:tester/src/test_info.dart';
 
+import 'src/test_info.dart';
 import 'src/compiler.dart';
 import 'src/config.dart';
 import 'src/isolate.dart';
 import 'src/resident.dart';
 import 'src/runner.dart';
+import 'src/web_runner.dart';
 import 'src/writer.dart';
 
 void runApplication({
@@ -19,7 +20,6 @@ void runApplication({
   @required bool batchMode,
   @required Config config,
 }) async {
-  var runners = <TestRunner>[];
   var compiler = Compiler(
     config: config,
     compilerMode: config.targetPlatform,
@@ -37,30 +37,48 @@ void runApplication({
   }
 
   // Step 3. Load test isolate.
-  TestRunner testRunner;
+  TestIsolate testIsolate;
+
   switch (config.targetPlatform) {
     case TargetPlatform.dart:
-      testRunner = VmTestRunner(
+      var testRunner = VmTestRunner(
         dartExecutable: config.dartPath,
       );
+      testIsolate = VmTestIsolate(testRunner: testRunner);
       break;
     case TargetPlatform.flutter:
-      testRunner = FlutterTestRunner(
+      var testRunner = FlutterTestRunner(
         flutterTesterPath: config.flutterTesterPath,
       );
+      testIsolate = VmTestIsolate(testRunner: testRunner);
       break;
     case TargetPlatform.web:
+      var testRunner = ChromeTestRunner(
+        dartSdkFile: File(config.webDartSdk),
+        dartSdkSourcemap: File(config.webDartSdkSourcemaps),
+        stackTraceMapper: File(config.stackTraceMapper),
+        requireJS: File(config.requireJS),
+        config: config,
+      );
+      testIsolate = WebTestIsolate(testRunner: testRunner);
+      break;
     case TargetPlatform.flutterWeb:
-      testRunner = ChromeTestRunner();
+      var testRunner = ChromeTestRunner(
+        dartSdkFile: File(config.flutterWebDartSdk),
+        dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
+        stackTraceMapper: File(config.stackTraceMapper),
+        requireJS: File(config.requireJS),
+        config: config,
+      );
+      testIsolate = WebTestIsolate(testRunner: testRunner);
       break;
   }
-  runners.add(testRunner);
-  var testIsolate = TestIsolate(testRunner: testRunner);
   try {
     await testIsolate.start(result, () {});
-  } on Exception catch (err) {
+  } on Exception catch (err, st) {
     print(err);
-    testRunner.dispose();
+    print(st);
+    testIsolate.dispose();
     exit(1);
   }
   var writer = TerminalTestWriter(
@@ -76,6 +94,7 @@ void runApplication({
       }
     }
     writer.writeSummary();
+    testIsolate.dispose();
     exit(writer.exitCode);
   }
 
@@ -85,5 +104,6 @@ void runApplication({
     testIsolate: testIsolate,
     writer: writer,
   );
+  print('READY');
   await resident.start();
 }

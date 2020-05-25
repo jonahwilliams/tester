@@ -13,7 +13,7 @@ import 'package:uuid/uuid.dart';
 import 'config.dart';
 import 'test_info.dart';
 
-const _testMain = r'''
+const _kVmTestMain = r'''
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -51,6 +51,47 @@ Future<void> main() {
   });
   stdin.listen((_) { });
 }
+''';
+
+const String _kFlutterWebTestMain = '''
+import 'dart:convert';
+import 'dart:async';
+import 'dart:developer';
+import 'dart:ui' as ui;
+
+Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
+  var testFunction = testRegistry[libraryUri][name];
+
+  var passed = false;
+  dynamic error;
+  dynamic stackTrace;
+  try {
+    await Future(() => testFunction());
+    passed = true;
+  } catch (err, st) {
+    error = err;
+    stackTrace = st;
+  } finally {
+    return <String, Object>{
+      'test': name,
+      'passed': passed,
+      'timeout': false,
+      'error': error?.toString(),
+      'stackTrace': stackTrace?.toString(),
+    };
+  }
+}
+
+Future<void> main() async {
+  registerExtension('ext.callTest', (String request, Map<String, String> args) async {
+    var test = args['test'];
+    var library = args['library'];
+    final result = await executeTest(test, library);
+    return ServiceExtensionResponse.result(json.encode(result));
+  });
+  await ui.webOnlyInitializePlatform();
+}
+
 ''';
 
 /// Abstraction for the frontend_server compiler process.
@@ -97,6 +138,12 @@ class Compiler {
       '--no-link-platform',
       '--output-dill=${dillOutput.path}',
       '--incremental',
+      '--filesystem-root',
+      Directory(config.workspacePath).parent.absolute.path,
+      '--filesystem-root',
+      path.join(config.packageRootPath),
+      '--filesystem-scheme',
+      'org-dartlang-app',
     ];
     _frontendServer = await Process.start(config.dartPath, args);
     _frontendServer.stderr
@@ -107,7 +154,8 @@ class Compiler {
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen(_stdoutHandler.handler);
-    _frontendServer.stdin.writeln('compile ${_mainFile.absolute.uri}');
+    _frontendServer.stdin
+        .writeln('compile org-dartlang-app:///tester/main.dart');
     var result = await _stdoutHandler.compilerOutput.future;
     if (result.errorCount != 0) {
       return null;
@@ -126,12 +174,17 @@ class Compiler {
     _stdoutHandler.reset();
     var pendingResult = _stdoutHandler.compilerOutput.future;
     var id = Uuid().v4();
-    _frontendServer.stdin.writeln('recompile ${_mainFile.absolute.uri} $id');
+    _frontendServer.stdin
+        .writeln('recompile org-dartlang-app:///tester/main.dart $id');
 
     for (var uri in invalidated) {
-      _frontendServer.stdin.writeln(uri.toString());
+      var relativePath = path.relative(
+        uri.toFilePath(),
+        from: config.packageRootPath,
+      );
+      _frontendServer.stdin.writeln('org-dartlang-app:///$relativePath');
     }
-    _frontendServer.stdin.writeln(_mainFile.absolute.uri.toString());
+    _frontendServer.stdin.writeln('org-dartlang-app:///tester/main.dart');
     _frontendServer.stdin.writeln(id);
     var result = await pendingResult;
     if (result.errorCount != 0) {
@@ -184,9 +237,26 @@ class Compiler {
   void _regenerateMain(Map<Uri, List<TestInfo>> testInformation) {
     var contents = StringBuffer();
     for (var testFileUri in testInformation.keys) {
-      contents.writeln('import "${testFileUri}";');
+      var relativePath = path.relative(
+        testFileUri.toFilePath(),
+        from: config.packageRootPath,
+      );
+      contents.writeln('import "org-dartlang-app:///$relativePath";');
     }
-    contents.write(_testMain);
+    switch (compilerMode) {
+      case TargetPlatform.dart:
+        contents.write(_kVmTestMain);
+        break;
+      case TargetPlatform.web:
+        contents.write(_kVmTestMain);
+        break;
+      case TargetPlatform.flutter:
+        contents.write(_kVmTestMain);
+        break;
+      case TargetPlatform.flutterWeb:
+        contents.write(_kFlutterWebTestMain);
+        break;
+    }
     contents.writeln('var testRegistry = {');
     for (var testFileUri in testInformation.keys) {
       contents.writeln('"${testFileUri}": {');
