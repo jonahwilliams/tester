@@ -55,21 +55,6 @@ class TestIsolate {
     return _testRunner.dispose();
   }
 
-  /// Runs all tests defined and streams the results.
-  ///
-  /// The order of test invocation is not currently defined.
-  Stream<TestResult> runAllTests(Map<Uri, List<TestInfo>> testInformation) {
-    var controller = StreamController<TestResult>();
-    var pending = <Future<void>>[];
-    for (var testFileUri in testInformation.keys) {
-      for (var testInfo in testInformation[testFileUri]) {
-        pending.add(runTest(testInfo).then(controller.add));
-      }
-    }
-    Future.wait(pending).whenComplete(controller.close);
-    return controller.stream;
-  }
-
   Future<TestResult> runTest(TestInfo testInfo) async {
     Map<String, Object> result;
     try {

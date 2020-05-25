@@ -13,7 +13,7 @@ import 'package:path/path.dart' as path;
 const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
 
 final argParser = ArgParser()
-  ..addFlag('batch', abbr: 'b', help: 'Whether to run tests in batch mode.')
+  ..addFlag('watch', abbr: 'b', help: 'Watch file changes and re-run tests.')
   ..addFlag('verbose', abbr: 'v')
   ..addOption(
     'platform',
@@ -72,7 +72,7 @@ Future<void> main(List<String> args) async {
 
   runApplication(
     verbose: argResults['verbose'] as bool,
-    batchMode: argResults['batch'] as bool,
+    batchMode: !(argResults['watch'] as bool),
     config: Config(
         targetPlatform: TargetPlatform.values[
             _allowedPlatforms.indexOf(argResults['platform'] as String)],

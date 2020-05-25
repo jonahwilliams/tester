@@ -6,6 +6,8 @@ environment:
   sdk: '>=2.8.0 <3.0.0'
 
 dependencies:
+  stream_transform: 1.2.0
+  watcher: '0.9.7+15'
   stack_trace: 1.9.3
   dart_console: 0.6.0
   vm_service: 4.0.4

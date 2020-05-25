@@ -68,9 +68,12 @@ class Compiler {
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
   StdoutHandler _stdoutHandler;
-  ProjectFileInvalidator _projectFileInvalidator;
   Process _frontendServer;
   File _mainFile;
+
+  DateTime get lastCompiled => _lastCompiledTime;
+
+  List<Uri> get dependencies => _dependencies;
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
   Future<Uri> start(Map<Uri, List<TestInfo>> testInformation) async {
@@ -79,29 +82,12 @@ class Compiler {
       workspace.createSync(recursive: true);
     }
     _mainFile = File(path.join(workspace.path, 'main.dart'));
-
-    var contents = StringBuffer();
-    for (var testFileUri in testInformation.keys) {
-      contents.writeln('import "${testFileUri}";');
-    }
-    contents.write(_testMain);
-    contents.writeln('var testRegistry = {');
-    for (var testFileUri in testInformation.keys) {
-      contents.writeln('"${testFileUri}": {');
-      for (var testInfo in testInformation[testFileUri]) {
-        contents.writeln('"${testInfo.name}": ${testInfo.name},');
-      }
-      contents.writeln('},');
-    }
-    contents.writeln('};');
-
-    _mainFile.writeAsStringSync(contents.toString());
+    _regenerateMain(testInformation);
 
     var dillOutput =
         File(path.join(config.workspacePath, 'main.dart.dill')).absolute;
 
     _stdoutHandler = StdoutHandler();
-    _projectFileInvalidator = ProjectFileInvalidator();
     var packagesUri = File(path.join(config.packageRootPath, '.packages')).uri;
     var args = <String>[
       config.frontendServerPath,
@@ -132,17 +118,12 @@ class Compiler {
     return dillOutput.uri;
   }
 
-  Future<Uri> recompile() async {
+  Future<Uri> recompile(
+    List<Uri> invalidated,
+    Map<Uri, List<TestInfo>> testInformation,
+  ) async {
+    _regenerateMain(testInformation);
     _stdoutHandler.reset();
-    var invalidated = await _projectFileInvalidator.findInvalidated(
-      lastCompiled: _lastCompiledTime,
-      urisToMonitor: _dependencies,
-      packagesUri:
-          Directory(path.join(config.packageRootPath, '.packages')).uri,
-    );
-    if (invalidated.isEmpty) {
-      return null;
-    }
     var pendingResult = _stdoutHandler.compilerOutput.future;
     var id = Uuid().v4();
     _frontendServer.stdin.writeln('recompile ${_mainFile.absolute.uri} $id');
@@ -150,6 +131,7 @@ class Compiler {
     for (var uri in invalidated) {
       _frontendServer.stdin.writeln(uri.toString());
     }
+    _frontendServer.stdin.writeln(_mainFile.absolute.uri.toString());
     _frontendServer.stdin.writeln(id);
     var result = await pendingResult;
     if (result.errorCount != 0) {
@@ -158,6 +140,7 @@ class Compiler {
     }
     _frontendServer.stdin.writeln('accept');
     _lastCompiledTime = DateTime.now();
+    _dependencies = result.sources;
     return File(result.outputFilename).absolute.uri;
   }
 
@@ -197,6 +180,28 @@ class Compiler {
     }
     throw StateError('_compilerMode was null');
   }
+
+  void _regenerateMain(Map<Uri, List<TestInfo>> testInformation) {
+    var contents = StringBuffer();
+    for (var testFileUri in testInformation.keys) {
+      contents.writeln('import "${testFileUri}";');
+    }
+    contents.write(_testMain);
+    contents.writeln('var testRegistry = {');
+    for (var testFileUri in testInformation.keys) {
+      contents.writeln('"${testFileUri}": {');
+      for (var testInfo in testInformation[testFileUri]) {
+        contents.writeln('"${testInfo.name}": ${testInfo.name},');
+      }
+      contents.writeln('},');
+    }
+    contents.writeln('};');
+    _mainFile.writeAsStringSync(contents.toString());
+  }
+
+  void dispose() {
+    _frontendServer.kill();
+  }
 }
 
 enum StdoutState {
@@ -217,7 +222,7 @@ class StdoutHandler {
   final List<Uri> sources = <Uri>[];
 
   bool _suppressCompilerMessages;
-  bool _expectSources;
+  bool _expectSources = true;
 
   void handler(String message) {
     const kResultPrefix = 'result ';
@@ -297,7 +302,6 @@ class ProjectFileInvalidator {
     @required DateTime lastCompiled,
     @required List<Uri> urisToMonitor,
     @required Uri packagesUri,
-    bool asyncScanning = false,
   }) async {
     if (lastCompiled == null) {
       assert(urisToMonitor.isEmpty);
@@ -313,7 +317,7 @@ class ProjectFileInvalidator {
     ];
     var invalidatedFiles = <Uri>[];
     for (var uri in urisToScan) {
-      var updatedAt = File(uri.toString()).statSync().modified;
+      var updatedAt = File(uri.toFilePath()).statSync().modified;
       if (updatedAt != null && updatedAt.isAfter(lastCompiled)) {
         invalidatedFiles.add(uri);
       }

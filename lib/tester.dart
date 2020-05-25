@@ -10,6 +10,7 @@ import 'package:tester/src/test_info.dart';
 import 'src/compiler.dart';
 import 'src/config.dart';
 import 'src/isolate.dart';
+import 'src/resident.dart';
 import 'src/runner.dart';
 import 'src/writer.dart';
 
@@ -62,17 +63,27 @@ void runApplication({
     testRunner.dispose();
     exit(1);
   }
-
   var writer = TerminalTestWriter(
     projectRoot: config.packageRootPath,
     verbose: verbose,
   );
-  writer.writeHeader();
-  await for (var testResult in testIsolate.runAllTests(testInformation)) {
-    var testInfo = testInformation[testResult.testFileUri]
-        .firstWhere((info) => info.name == testResult.testName);
-    writer.writeTest(testResult, testInfo);
+  if (batchMode) {
+    writer.writeHeader();
+    for (var testFileUri in testInformation.keys) {
+      for (var testInfo in testInformation[testFileUri]) {
+        var testResult = await testIsolate.runTest(testInfo);
+        writer.writeTest(testResult, testInfo);
+      }
+    }
+    writer.writeSummary();
+    exit(writer.exitCode);
   }
-  writer.writeSummary();
-  exit(writer.exitCode);
+
+  var resident = Resident(
+    config: config,
+    compiler: compiler,
+    testIsolate: testIsolate,
+    writer: writer,
+  );
+  await resident.start();
 }
