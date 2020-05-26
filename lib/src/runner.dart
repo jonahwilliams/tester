@@ -80,6 +80,7 @@ class VmTestRunner implements TestRunner {
       uniqueFile.deleteSync();
     }
     _process = await Process.start(dartExecutable, <String>[
+      '--enable-asserts',
       '--disable-dart-dev',
       '--enable-vm-service=0',
       '--write-service-info=${uniqueFile.path}',

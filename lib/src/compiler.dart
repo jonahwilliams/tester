@@ -94,6 +94,7 @@ Future<void> main() async {
 
 ''';
 
+
 /// Abstraction for the frontend_server compiler process.
 ///
 /// The frontend_server communicates to this tool over stdin and stdout.
@@ -126,7 +127,7 @@ class Compiler {
     _regenerateMain(testInformation);
 
     var dillOutput =
-        File(path.join(config.workspacePath, 'main.dart.dill')).absolute;
+        File(path.join(config.workspacePath, 'main.${compilerMode}.dart.dill')).absolute;
 
     _stdoutHandler = StdoutHandler();
     var packagesUri = File(path.join(config.packageRootPath, '.packages')).uri;
@@ -204,7 +205,6 @@ class Compiler {
           '--target=vm',
           '--sdk-root=${config.dartSdkRoot}',
           '--platform=${config.platformDillUri}',
-          '--no-link-platform',
         ];
       case TargetPlatform.flutter:
         return <String>[
@@ -218,17 +218,18 @@ class Compiler {
         return <String>[
           '--target=dartdevc',
           '--sdk-root=${config.dartSdkRoot}',
-          '--platform=${config.platformDillUri}',
-          '--no-link-platform',
+          '--platform=${config.dartWebPlatformDillUri}',
           '--debugger-module-names',
         ];
       case TargetPlatform.flutterWeb:
         return <String>[
           '--target=dartdevc',
+          '-Ddart.vm.profile=false',
+          '-Ddart.vm.product=false',
           '--sdk-root=${config.dartSdkRoot}',
           '--platform=${config.flutterWebPlatformDillUri}',
-          '--no-link-platform',
           '--debugger-module-names',
+          '--track-widget-creation',
         ];
     }
     throw StateError('_compilerMode was null');
