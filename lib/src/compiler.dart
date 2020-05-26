@@ -94,7 +94,6 @@ Future<void> main() async {
 
 ''';
 
-
 /// Abstraction for the frontend_server compiler process.
 ///
 /// The frontend_server communicates to this tool over stdin and stdout.
@@ -127,7 +126,8 @@ class Compiler {
     _regenerateMain(testInformation);
 
     var dillOutput =
-        File(path.join(config.workspacePath, 'main.${compilerMode}.dart.dill')).absolute;
+        File(path.join(config.workspacePath, 'main.${compilerMode}.dart.dill'))
+            .absolute;
 
     _stdoutHandler = StdoutHandler();
     var packagesUri = File(path.join(config.packageRootPath, '.packages')).uri;

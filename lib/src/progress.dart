@@ -16,7 +16,16 @@ class StdoutProgress extends Progress {
   Timer timer;
   String message;
   final Console console = Console();
-  static const kProgressChars = <String>['⣾','⣽','⣻', '⢿', '⡿', '⣟', '⣯', '⣷',];
+  static const kProgressChars = <String>[
+    '⣾',
+    '⣽',
+    '⣻',
+    '⢿',
+    '⡿',
+    '⣟',
+    '⣯',
+    '⣷',
+  ];
   var index = 0;
 
   @override
@@ -28,7 +37,6 @@ class StdoutProgress extends Progress {
     this.message = message;
     console.hideCursor();
     timer ??= Timer.periodic(const Duration(milliseconds: 45), _render);
-
   }
 
   @override

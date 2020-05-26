@@ -104,7 +104,7 @@ class TerminalTestWriter extends TestWriter {
                 from: Directory.current.path,
               )
             : frame.uri.path;
-        if (testResult.testFileUri.toFilePath().endsWith(relativePathTest)) {
+        if (testResult.testFileUri.toString().endsWith(relativePathTest)) {
           return true;
         }
         return false;
@@ -163,18 +163,26 @@ class TerminalTestWriter extends TestWriter {
   @override
   void writeSummary() {
     stopwatch.stop();
+    if (failed > 0) {
+      console
+        ..write('  ')
+        ..setForegroundColor(ConsoleColor.brightRed)
+        ..write('$failed failed')
+        ..resetColorAttributes()
+        ..write(', ')
+        ..setForegroundColor(ConsoleColor.brightGreen)
+        ..write('$passed passed')
+        ..resetColorAttributes();
+    } else {
+      console
+        ..write('  ')
+        ..setForegroundColor(ConsoleColor.brightGreen)
+        ..writeLine('all tests passed.')
+        ..resetColorAttributes();
+    }
     console
-      ..write('  ')
-      ..setForegroundColor(ConsoleColor.brightRed)
-      ..write('$failed failed')
-      ..resetColorAttributes()
-      ..write(', ')
-      ..setForegroundColor(ConsoleColor.brightGreen)
-      ..write('$passed passed')
-      ..resetColorAttributes()
-      ..writeLine(' out of ${failed + passed} total.');
-    console
-      ..writeLine('  ${stopwatch.elapsedMilliseconds} ms elapsed.')
+      ..writeLine(
+          '  ${failed + passed} test(s) in ${stopwatch.elapsedMilliseconds} ms elapsed.')
       ..writeLine();
   }
 

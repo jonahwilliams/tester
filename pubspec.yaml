@@ -23,5 +23,7 @@ dependencies:
   webkit_inspection_protocol: 0.5.4
   _fe_analyzer_shared: 3.0.0
 
-executables:
-  tester:
+dev_dependencies:
+  tester_test:
+    git:
+      url: git@github.com:jonahwilliams/tester_test.git
