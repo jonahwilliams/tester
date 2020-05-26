@@ -24,6 +24,7 @@ class Config {
     @required this.webDartSdkSourcemaps,
     @required this.stackTraceMapper,
     @required this.requireJS,
+    @required this.dartWebPlatformDillUri,
   });
 
   /// The file path to the dart executable.
@@ -71,6 +72,8 @@ class Config {
 
   final String stackTraceMapper;
   final String requireJS;
+
+  final Uri dartWebPlatformDillUri;
 }
 
 /// The compiler configuration for the targeted platform.

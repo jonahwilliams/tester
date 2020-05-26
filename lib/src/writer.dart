@@ -94,17 +94,16 @@ class TerminalTestWriter extends TestWriter {
 
     var trace = Trace.parse(testResult.stackTrace);
     var testFrame = trace.frames.firstWhere(
-      (frame) {
-        // Normal VM frame.
+      (Frame frame) {
         if (frame.uri == testInfo.testFileUri) {
           return true;
         }
-        var relativePathTest = frame.uri.scheme == 'org-dartlang-app'
-            ? frame.uri.path
-            : path.relative(
+        var relativePathTest = frame.uri.scheme == 'file'
+            ? path.relative(
                 frame.uri.toFilePath(),
                 from: Directory.current.path,
-              );
+              )
+            : frame.uri.path;
         if (testResult.testFileUri.toFilePath().endsWith(relativePathTest)) {
           return true;
         }

@@ -5,7 +5,12 @@
 /// Tests that a sync function completes normally
 void testNoException() {}
 
-/// Tests thatss sync function that returns an object completes normally.
+/// Tests that an assert is caight as an error.
+void testSyncAssert() {
+  assert(false, 'this should end up in the message');
+}
+
+/// Tests thats sync function that returns an object completes normally.
 Object testReturnObject() {
   return Object();
 }
