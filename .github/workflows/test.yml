@@ -18,8 +18,8 @@ jobs:
       - name: Dependencies
         run: pub get
       - name: Analyze
-        run: dart analyze
+        run: dartanalyzer
       - name: Format
-        run: dart format --set-exit-if-changed
+        run: dartfmt --set-exit-if-changed
       - name: test
         run: dart bin/main.dart --platform=dart -v
