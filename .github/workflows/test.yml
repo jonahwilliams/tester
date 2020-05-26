@@ -18,7 +18,7 @@ jobs:
       - name: Dependencies
         run: pub get
       - name: Analyze
-        run: dartanalyzer
+        run: dartanalyzer .
       - name: Format
         run: dartfmt --set-exit-if-changed
       - name: test
