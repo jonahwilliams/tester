@@ -22,4 +22,4 @@ jobs:
       - name: Format
         run: dartfmt --set-exit-if-changed -w .
       - name: test
-        run: dart bin/main.dart --platform=dart -v
+        run: dart bin/tester.dart --platform=dart -v
