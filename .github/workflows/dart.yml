@@ -20,6 +20,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: Release.txt
+          files: tester
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
