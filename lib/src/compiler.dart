@@ -380,8 +380,7 @@ class ProjectFileInvalidator {
     }
     var urisToScan = <Uri>[
       // Don't watch pub cache directories to speed things up a little.
-      for (var uri in urisToMonitor)
-        if (_isNotInPubCache(uri)) uri,
+      for (var uri in urisToMonitor) if (_isNotInPubCache(uri)) uri,
 
       // We need to check the .packages file too since it is not used in compilation.
       packagesUri,
