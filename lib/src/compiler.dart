@@ -238,10 +238,10 @@ class Compiler {
   void _regenerateMain(Map<Uri, List<TestInfo>> testInformation) {
     var contents = StringBuffer();
     for (var testFileUri in testInformation.keys) {
-      var relativePath = path.relative(
+      var relativePath = File(path.relative(
         testFileUri.toFilePath(),
         from: config.packageRootPath,
-      );
+      )).uri;
       contents.writeln('import "org-dartlang-app:///$relativePath";');
     }
     switch (compilerMode) {

@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 
+import 'src/progress.dart';
 import 'src/test_info.dart';
 import 'src/compiler.dart';
 import 'src/config.dart';
@@ -20,12 +21,13 @@ void runApplication({
   @required bool batchMode,
   @required Config config,
 }) async {
+  var progress = StdoutProgress();
+  progress.start('Loading the test isolate');
   var compiler = Compiler(
     config: config,
     compilerMode: config.targetPlatform,
   );
   var infoProvider = TestInformationProvider();
-
   var testInformation = <Uri, List<TestInfo>>{};
   for (var testFileUri in config.tests) {
     testInformation[testFileUri] = infoProvider.collectTestInfo(testFileUri);
@@ -85,6 +87,7 @@ void runApplication({
     projectRoot: config.packageRootPath,
     verbose: verbose,
   );
+  progress.stop();
   if (batchMode) {
     writer.writeHeader();
     for (var testFileUri in testInformation.keys) {
