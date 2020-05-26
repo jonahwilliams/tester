@@ -16,11 +16,11 @@ jobs:
       - name: Install dependencies
         run: pub get
       - name: Build
-        run: dart2native -o linux/tester bin/tester.dart
+        run: dart2native -o linux_tester bin/tester.dart
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: linux/tester
+          files: linux_tester
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
   build_windows:
@@ -33,11 +33,11 @@ jobs:
       - name: Install dependencies
         run: pub get
       - name: Build
-        run: dart2native -o windows/tester.exe bin/tester.dart
+        run: dart2native -o windows_tester.exe bin/tester.dart
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: windows/tester.exe
+          files: windows_tester.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build_macos:
@@ -50,10 +50,10 @@ jobs:
       - name: Install dependencies
         run: pub get
       - name: Builds
-        run: dart2native -o macos/tester bin/tester.dart
+        run: dart2native -o macos_tester bin/tester.dart
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: macos/tester
+          files: macos_tester
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
