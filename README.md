@@ -21,4 +21,4 @@ Currently this runner can execute Dart, Dart Web, Flutter, and Flutter Web tests
 flutter config --enable-web
 ```
 
-By default, tester runs all tests and then exists. It can also be configured with `--watch`, and will rerun any updated tests and stay resident.
+By default, tester runs all tests and then exits. It can also be configured with `--watch`, and will rerun any updated tests and stay resident.
