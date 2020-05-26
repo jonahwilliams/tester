@@ -1,9 +1,10 @@
-#tester
+# tester
 
 An experimental test runner. To run:
 
 ```
-dart bin/main.dart [/path/to/tester/test_project/]
+dart /path/to/bin/tester.dart [test/a_test.dart]
 ```
 
-Currently this runner can only run Dart VM and Flutter tests. This requires the latest TOT flutter which includes a `bin/dart` script.
+Currently this runner can execute Dart, Dart Web, Flutter, and Flutter Web tests. This requires the latest TOT Flutter which includes a `bin/dart` script.
+
