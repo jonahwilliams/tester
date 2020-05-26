@@ -23,6 +23,11 @@ final argParser = ArgParser()
   );
 
 Future<void> main(List<String> args) async {
+  if (!File(path.join(Directory.current.path, 'pubspec.yaml')).existsSync()) {
+    print('tester must be run in a directory with a pubspec.yaml.');
+    exit(1);
+  }
+
   var argResults = argParser.parse(args);
   String flutterRoot;
   if (Platform.isWindows) {
@@ -55,14 +60,20 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  var projectDirectory = argResults.rest.first ?? Directory.current.path;
+  var projectDirectory = Directory.current.path;
 
-  final tests = Directory(path.join(projectDirectory, 'test'))
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((file) => file.path.endsWith('_test.dart'))
-      .map((file) => file.absolute.uri)
-      .toList();
+  List<Uri> tests;
+  if (argResults.rest.isEmpty) {
+    tests = Directory(path.join(projectDirectory, 'test'))
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('_test.dart'))
+        .map((file) => file.absolute.uri)
+        .toList();
+  } else {
+    tests =
+        argResults.rest.map((String path) => File(path).absolute.uri).toList();
+  }
 
   var workspace =
       Directory(path.join(projectDirectory, '.dart_tool', 'tester'));

@@ -47,9 +47,11 @@ class Resident {
 
     var pendingTest = false;
     var controller = StreamController<WatchEvent>();
-    Watcher(path.join(config.packageRootPath, 'lib'))
-        .events
-        .listen(controller.add);
+    if (File(path.join(config.packageRootPath, 'lib')).existsSync()) {
+      Watcher(path.join(config.packageRootPath, 'lib'))
+          .events
+          .listen(controller.add);
+    }
     Watcher(path.join(config.packageRootPath, 'test'))
         .events
         .listen(controller.add);

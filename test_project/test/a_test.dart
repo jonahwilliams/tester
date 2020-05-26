@@ -5,12 +5,12 @@
 /// Tests that a sync function completes normally
 void testNoException() {}
 
-/// Tests that a sync function that returns an object completes normally.
+/// Tests thatss sync function that returns an object completes normally.
 Object testReturnObject() {
   return Object();
 }
 
-/// Tests that a sync exception causes a test failure.
+/// Tests that a ssync exception causes a test failure.
 void testSyncException() {
   throw Exception('Expected 1 == 2 but was false.');
 }
