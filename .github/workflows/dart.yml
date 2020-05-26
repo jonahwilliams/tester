@@ -1,0 +1,25 @@
+name: Main
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image:  google/dart:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: pub get
+      - name: Build
+        run: dart2native -o tester bin/tester.dart
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Release.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
