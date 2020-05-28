@@ -7,7 +7,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-    - name: Checkout Flutter repo
+      - name: Checkout Flutter repo
         uses: actions/checkout@v2
         with:
           repository: flutter/flutter
