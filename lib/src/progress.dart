@@ -9,7 +9,7 @@ import 'package:dart_console/dart_console.dart';
 
 abstract class Progress {
   factory Progress() {
-    if (stdout.supportsAnsiEscapes) {
+    if (false) {
       return StdoutProgress();
     }
     return CiProgress();

@@ -83,7 +83,7 @@ void runApplication({
     testIsolate.dispose();
     exit(1);
   }
-  var writer = TerminalTestWriter(
+  var writer = TestWriter(
     projectRoot: config.packageRootPath,
     verbose: verbose,
   );

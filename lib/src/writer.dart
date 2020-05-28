@@ -15,6 +15,19 @@ import 'package:path/path.dart' as path;
 
 /// A class that outputs test results for humans or machines to interpret.
 abstract class TestWriter {
+  factory TestWriter({
+    @required String projectRoot,
+    @required bool verbose,
+  }) {
+    if (false) {
+      return TerminalTestWriter(
+        projectRoot: projectRoot,
+        verbose: verbose,
+      );
+    }
+    return CiTestWriter();
+  }
+
   /// Update the results of a test.
   void writeTest(TestResult result, TestInfo testInfo);
 
@@ -32,8 +45,36 @@ abstract class TestWriter {
 
 const int _kGreyColor = 241;
 
+class CiTestWriter implements TestWriter {
+  @override
+  int get exitCode => failed == 0 ? 0 : 1;
+
+  int passed = 0;
+  int failed = 0;
+  final stopwatch = Stopwatch();
+
+  @override
+  void writeHeader() {
+    passed = 0;
+    failed = 0;
+    stopwatch.start();
+  }
+
+  @override
+  void writeSummary() {
+    print(
+        '${passed} passed, ${failed} failed out of ${passed + failed} in ${stopwatch.elapsedMilliseconds} ms');
+  }
+
+  @override
+  void writeTest(TestResult result, TestInfo testInfo) {
+    print(
+        '${result.testFileUri}${result.testName}: ${result.passed ? 'PASS' : 'FAIL'}');
+  }
+}
+
 /// A [TestWriter] that outputs to a terminal.
-class TerminalTestWriter extends TestWriter {
+class TerminalTestWriter implements TestWriter {
   TerminalTestWriter({
     @required this.projectRoot,
     @required this.verbose,
