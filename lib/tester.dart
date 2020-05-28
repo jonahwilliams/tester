@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 
-import 'src/progress.dart';
 import 'src/test_info.dart';
 import 'src/compiler.dart';
 import 'src/config.dart';
@@ -22,8 +21,6 @@ void runApplication({
   @required bool ci,
   @required Config config,
 }) async {
-  var progress = Progress(ci: ci);
-  progress.start('Loading the test isolate');
   var compiler = Compiler(
     config: config,
     compilerMode: config.targetPlatform,
@@ -89,7 +86,6 @@ void runApplication({
     verbose: verbose,
     ci: ci,
   );
-  progress.stop();
   if (batchMode) {
     writer.writeHeader();
     for (var testFileUri in testInformation.keys) {
