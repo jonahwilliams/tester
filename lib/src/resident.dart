@@ -71,7 +71,6 @@ class Resident {
           packagesUri:
               Directory(path.join(config.packageRootPath, '.packages')).uri,
         );
-        print(invalidated);
         if (invalidated.isEmpty) {
           return;
         }
@@ -80,7 +79,6 @@ class Resident {
           return;
         }
         pendingTest = true;
-        // console.clearScreen();
         writer.writeHeader();
         for (var testFileUri in testInformation.keys) {
           for (var testInfo in testInformation[testFileUri]) {
@@ -97,7 +95,6 @@ class Resident {
         return;
       }
       var testUri = File(event.path).absolute.uri;
-      print(testUri);
       if (testInformation[testUri] == null) {
         return;
       }
@@ -107,12 +104,10 @@ class Resident {
         packagesUri:
             Directory(path.join(config.packageRootPath, '.packages')).uri,
       );
-      print(invalidated);
       if (invalidated.isEmpty) {
         return;
       }
       pendingTest = true;
-      // console.clearScreen();
       for (var testFileUri in invalidated) {
         if (testInformation.containsKey(testFileUri)) {
           testInformation[testFileUri] =

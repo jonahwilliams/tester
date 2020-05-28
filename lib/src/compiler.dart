@@ -193,10 +193,12 @@ class Compiler {
         .writeln('recompile org-dartlang-app:///tester/main.dart $id');
 
     for (var uri in invalidated) {
-      var relativePath = fileSystem.path.relative(
-        uri.toFilePath(windows: platform.isWindows),
-        from: config.packageRootPath,
-      );
+      var relativePath = fileSystem
+          .file(fileSystem.path.relative(
+            uri.toFilePath(windows: platform.isWindows),
+            from: config.packageRootPath,
+          ))
+          .uri;
       _frontendServer.stdin.writeln('org-dartlang-app:///$relativePath');
     }
     _frontendServer.stdin.writeln('org-dartlang-app:///tester/main.dart');
