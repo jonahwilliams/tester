@@ -203,21 +203,21 @@ class TerminalTestWriter implements TestWriter {
 
       var spaces = indentWidth - index.toString().length;
       prefix = '${' ' * (spaces)}$index| ';
-      if (testLines.length > index) {
+      if (testLines.length > index - 1) {
         console
           ..setForegroundExtendedColor(_kGreyColor)
           ..write(prefix)
           ..resetColorAttributes()
-          ..writeLine(testLines[index])
+          ..writeLine(testLines[index - 1])
           ..writeLine();
       }
     }
 
     for (var frame in trace.frames) {
+      console.writeLine(_indent(frame.toString(), 4));
       if (!verbose && frame == testFrame) {
         break;
       }
-      console.writeLine(_indent(frame.toString(), 4));
     }
     console.writeLine();
   }
