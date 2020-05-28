@@ -4,15 +4,33 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:dart_console/dart_console.dart';
 
 abstract class Progress {
+  factory Progress({@required bool ci}) {
+    if (ci) {
+      return CiProgress();
+    }
+    return StdoutProgress();
+  }
+
   void start(String message);
 
   void stop();
 }
 
-class StdoutProgress extends Progress {
+class CiProgress implements Progress {
+  @override
+  void start(String message) {
+    print(message);
+  }
+
+  @override
+  void stop() {}
+}
+
+class StdoutProgress implements Progress {
   Timer timer;
   String message;
   final Console console = Console();

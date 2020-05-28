@@ -19,9 +19,10 @@ import 'src/writer.dart';
 void runApplication({
   @required bool verbose,
   @required bool batchMode,
+  @required bool ci,
   @required Config config,
 }) async {
-  var progress = StdoutProgress();
+  var progress = Progress(ci: ci);
   progress.start('Loading the test isolate');
   var compiler = Compiler(
     config: config,
@@ -83,9 +84,10 @@ void runApplication({
     testIsolate.dispose();
     exit(1);
   }
-  var writer = TerminalTestWriter(
+  var writer = TestWriter(
     projectRoot: config.packageRootPath,
     verbose: verbose,
+    ci: ci,
   );
   progress.stop();
   if (batchMode) {
