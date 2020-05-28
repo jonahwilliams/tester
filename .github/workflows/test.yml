@@ -25,7 +25,7 @@ jobs:
         run: ../flutter/bin/dart format --set-exit-if-changed .
         working-directory: tester
       - name: precache
-        run: ../flutter/bin/dart precache --no-android --no-ios
+        run: ../flutter/bin/flutter precache --no-android --no-ios
         working-directory: tester
       - name: test
         run: ../flutter/bin/dart bin/tester.dart --platform=dart --flutter-root=../flutter -v
