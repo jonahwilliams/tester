@@ -16,7 +16,7 @@ jobs:
       - name: Dependencies
         run: flutter/bin/dart pub get
       - name: Analyze
-        run: dartanalyzer .
+        run: flutter/bin/dart analyze .
       - name: Format
         run: flutter/bin/dart format --set-exit-if-changed -w .
       - name: precache
