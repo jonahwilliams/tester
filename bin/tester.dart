@@ -34,7 +34,7 @@ Future<void> main(List<String> args) async {
   var argResults = argParser.parse(args);
   String flutterRoot;
   if (argResults['flutter-root'] != null) {
-    flutterRoot = argResults['flutter_root'] as String;
+    flutterRoot = argResults['flutter-root'] as String;
   }
   if (Platform.isWindows) {
     flutterRoot = File((await Process.run('where', <String>['flutter']))
