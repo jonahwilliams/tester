@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 /// Tests that a sync function completes normally
-void testNoException() {}
+void testNoException() {
+  assert(false);
+}
 
 /// Tests that an assert is caight as an error.
 void testSyncAssert() {
