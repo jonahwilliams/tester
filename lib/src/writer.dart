@@ -164,10 +164,12 @@ class TerminalTestWriter implements TestWriter {
       var testLines = testFile.readAsLinesSync();
       var startLine = math.max(0, testFrame.line - 4);
       var testRange = testLines.sublist(startLine, testFrame.line);
+      var indentWidth = 4 + (startLine + 5).toString().length;
 
       var index = startLine + 1;
       var prefix = '';
       for (var line in testRange) {
+        var spaces = indentWidth - index.toString().length;
         if (index == testFrame.line) {
           console
             ..write(' ')
@@ -175,7 +177,7 @@ class TerminalTestWriter implements TestWriter {
             ..write('>')
             ..resetColorAttributes()
             ..setForegroundExtendedColor(_kGreyColor);
-          prefix = '  $index| ';
+          prefix = '${' ' * (spaces - 2)}$index| ';
           console.write(prefix);
           prefix = ' >' + prefix;
           console.resetColorAttributes();
@@ -183,7 +185,7 @@ class TerminalTestWriter implements TestWriter {
           index += 1;
           continue;
         } else {
-          prefix = '    $index| ';
+          prefix = '${' ' * (spaces)}$index| ';
           console
             ..setForegroundExtendedColor(_kGreyColor)
             ..write(prefix)
@@ -194,12 +196,13 @@ class TerminalTestWriter implements TestWriter {
       }
       console
         ..setForegroundExtendedColor(_kGreyColor)
-        ..write('      | ')
+        ..write('${' ' * indentWidth}| ')
         ..setForegroundColor(ConsoleColor.brightRed)
         ..writeLine((' ' * (prefix.length + testFrame.column - 5)) + '^')
         ..resetColorAttributes();
 
-      prefix = '    $index| ';
+      var spaces = indentWidth - index.toString().length;
+      prefix = '${' ' * (spaces)}$index| ';
       if (testLines.length > index) {
         console
           ..setForegroundExtendedColor(_kGreyColor)
