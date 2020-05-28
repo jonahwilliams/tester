@@ -110,7 +110,7 @@ Future<void> main(List<String> args) async {
     platformDillUri: File(path.join(
       flutterRoot,
       'bin/cache/dart-sdk/lib/_internal/vm_platform_strong.dill',
-    )).uri,
+    )).absolute.uri,
     flutterPatchedSdkRoot: path.join(
       flutterRoot,
       'bin/cache/artifacts/engine/common/flutter_patched_sdk',
