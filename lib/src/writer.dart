@@ -165,10 +165,10 @@ class TerminalTestWriter implements TestWriter {
       var startLine = math.max(0, testFrame.line - 4);
       var testRange = testLines.sublist(startLine, testFrame.line);
 
-      var index = startLine;
+      var index = startLine + 1;
       var prefix = '';
       for (var line in testRange) {
-        if (index == testFrame.line - 1) {
+        if (index == testFrame.line) {
           console
             ..write(' ')
             ..setForegroundColor(ConsoleColor.brightRed)
