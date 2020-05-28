@@ -22,7 +22,7 @@ jobs:
         run: ../flutter/bin/dart analyze .
         working-directory: tester
       - name: Format
-        run: ../flutter/bin/dart format --set-exit-if-changed -w .
+        run: ../flutter/bin/dart format --set-exit-if-changed .
         working-directory: tester
       - name: precache
         run: ../flutter/bin/dart precache --no-android --no-ios
