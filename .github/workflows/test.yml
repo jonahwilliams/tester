@@ -1,5 +1,5 @@
 name: Tests
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   tool_test_linux:
@@ -14,7 +14,7 @@ jobs:
           fetch-depth: 0
           path: flutter
       - name: Dependencies
-        run: flutter/bin/dart/pub get
+        run: flutter/bin/dart pub get
       - name: Analyze
         run: dartanalyzer .
       - name: Format
