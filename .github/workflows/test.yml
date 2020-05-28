@@ -12,7 +12,7 @@ jobs:
         with:
           repository: flutter/flutter
           fetch-depth: 0
-        path: flutter
+          path: flutter
       - name: Dependencies
         run: flutter/bin/dart/pub get
       - name: Analyze
