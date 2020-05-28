@@ -2,16 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:test/test.dart' show hasLength;
-import 'package:tester_test/tester_test.dart';
-
 /// Tests that a sync function completes normally
 void testNoException() {}
-
-/// Tests that this can interop with `package:test`
-void testExpectAdditionWorks() {
-  expect([1, 2, 3], hasLength(2));
-}
 
 /// Tests that an assert is caight as an error.
 void testSyncAssert() {
