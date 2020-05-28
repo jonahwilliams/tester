@@ -1,25 +1,32 @@
 name: Tests
-on:
-  # Trigger the workflow on push or pull request,
-  # but only for the master branch
-  push:
-    branches:
-      - master
-  pull_request:
+on: [pull_request]
 
 jobs:
   tool_test_linux:
     runs-on: ubuntu-latest
-    container:
-      image:  google/dart:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          path: tester
+      - name: Checkout Flutter repo
+        uses: actions/checkout@v2
+        with:
+          repository: flutter/flutter
+          fetch-depth: 0
+          path: flutter
       - name: Dependencies
-        run: pub get
+        run: ../flutter/bin/dart pub get
+        working-directory: tester
       - name: Analyze
-        run: dartanalyzer .
+        run: ../flutter/bin/dart analyze .
+        working-directory: tester
       - name: Format
-        run: dartfmt --set-exit-if-changed -w .
+        run: ../flutter/bin/dart format --set-exit-if-changed .
+        working-directory: tester
+      - name: precache
+        run: ../flutter/bin/flutter precache --no-android --no-ios
+        working-directory: tester
       - name: test
-        run: dart bin/tester.dart --platform=dart -v
+        run: ../flutter/bin/dart bin/tester.dart --platform=dart --flutter-root=../flutter --ci -v
+        working-directory: tester

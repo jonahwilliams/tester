@@ -47,7 +47,7 @@ class Resident {
 
     var pendingTest = false;
     var controller = StreamController<WatchEvent>();
-    if (File(path.join(config.packageRootPath, 'lib')).existsSync()) {
+    if (Directory(path.join(config.packageRootPath, 'lib')).existsSync()) {
       Watcher(path.join(config.packageRootPath, 'lib'))
           .events
           .listen(controller.add);
@@ -79,7 +79,6 @@ class Resident {
           return;
         }
         pendingTest = true;
-        console.clearScreen();
         writer.writeHeader();
         for (var testFileUri in testInformation.keys) {
           for (var testInfo in testInformation[testFileUri]) {
@@ -109,7 +108,6 @@ class Resident {
         return;
       }
       pendingTest = true;
-      console.clearScreen();
       for (var testFileUri in invalidated) {
         if (testInformation.containsKey(testFileUri)) {
           testInformation[testFileUri] =

@@ -6,8 +6,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file/file.dart';
+import 'package:file/local.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
+import 'package:process/process.dart';
+import 'package:tester/src/platform.dart';
 import 'package:uuid/uuid.dart';
 
 import 'config.dart';
@@ -101,10 +104,16 @@ class Compiler {
   Compiler({
     @required this.config,
     @required this.compilerMode,
+    this.fileSystem = const LocalFileSystem(),
+    this.processManager = const LocalProcessManager(),
+    this.platform = const LocalPlatform(),
   });
 
+  final FileSystem fileSystem;
+  final ProcessManager processManager;
   final Config config;
   final TargetPlatform compilerMode;
+  final Platform platform;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -118,20 +127,25 @@ class Compiler {
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
   Future<Uri> start(Map<Uri, List<TestInfo>> testInformation) async {
-    var workspace = Directory(config.workspacePath);
+    var workspace = fileSystem.directory(config.workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
-    _mainFile = File(path.join(workspace.path, 'main.dart'));
+    _mainFile =
+        fileSystem.file(fileSystem.path.join(workspace.path, 'main.dart'));
     _regenerateMain(testInformation);
 
-    var dillOutput =
-        File(path.join(config.workspacePath, 'main.${compilerMode}.dart.dill'))
-            .absolute;
+    var dillOutput = fileSystem
+        .file(fileSystem.path
+            .join(config.workspacePath, 'main.${compilerMode}.dart.dill'))
+        .absolute;
 
     _stdoutHandler = StdoutHandler();
-    var packagesUri = File(path.join(config.packageRootPath, '.packages')).uri;
+    var packagesUri = fileSystem
+        .file(fileSystem.path.join(config.packageRootPath, '.packages'))
+        .uri;
     var args = <String>[
+      config.dartPath,
       config.frontendServerPath,
       ..._getArgsForCompilerMode,
       '--enable-asserts',
@@ -140,13 +154,13 @@ class Compiler {
       '--output-dill=${dillOutput.path}',
       '--incremental',
       '--filesystem-root',
-      Directory(config.workspacePath).parent.absolute.path,
+      fileSystem.file(config.workspacePath).parent.absolute.path,
       '--filesystem-root',
-      path.join(config.packageRootPath),
+      fileSystem.path.join(config.packageRootPath),
       '--filesystem-scheme',
       'org-dartlang-app',
     ];
-    _frontendServer = await Process.start(config.dartPath, args);
+    _frontendServer = await processManager.start(args);
     _frontendServer.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
@@ -179,10 +193,12 @@ class Compiler {
         .writeln('recompile org-dartlang-app:///tester/main.dart $id');
 
     for (var uri in invalidated) {
-      var relativePath = path.relative(
-        uri.toFilePath(),
-        from: config.packageRootPath,
-      );
+      var relativePath = fileSystem
+          .file(fileSystem.path.relative(
+            uri.toFilePath(windows: platform.isWindows),
+            from: config.packageRootPath,
+          ))
+          .uri;
       _frontendServer.stdin.writeln('org-dartlang-app:///$relativePath');
     }
     _frontendServer.stdin.writeln('org-dartlang-app:///tester/main.dart');
@@ -195,7 +211,7 @@ class Compiler {
     _frontendServer.stdin.writeln('accept');
     _lastCompiledTime = DateTime.now();
     _dependencies = result.sources;
-    return File(result.outputFilename).absolute.uri;
+    return fileSystem.file(result.outputFilename).absolute.uri;
   }
 
   List<String> get _getArgsForCompilerMode {
@@ -238,10 +254,12 @@ class Compiler {
   void _regenerateMain(Map<Uri, List<TestInfo>> testInformation) {
     var contents = StringBuffer();
     for (var testFileUri in testInformation.keys) {
-      var relativePath = File(path.relative(
-        testFileUri.toFilePath(),
-        from: config.packageRootPath,
-      )).uri;
+      var relativePath = fileSystem
+          .file(fileSystem.path.relative(
+            testFileUri.toFilePath(windows: platform.isWindows),
+            from: config.packageRootPath,
+          ))
+          .uri;
       contents.writeln('import "org-dartlang-app:///$relativePath";');
     }
     switch (compilerMode) {
@@ -367,6 +385,14 @@ class CompilerOutput {
 }
 
 class ProjectFileInvalidator {
+  ProjectFileInvalidator({
+    this.fileSystem = const LocalFileSystem(),
+    this.platform = const LocalPlatform(),
+  });
+
+  final FileSystem fileSystem;
+  final Platform platform;
+
   static const _pubCachePathLinuxAndMac = '.pub-cache';
 
   Future<List<Uri>> findInvalidated({
@@ -388,7 +414,10 @@ class ProjectFileInvalidator {
     ];
     var invalidatedFiles = <Uri>[];
     for (var uri in urisToScan) {
-      var updatedAt = File(uri.toFilePath()).statSync().modified;
+      var updatedAt = fileSystem
+          .file(uri.toFilePath(windows: platform.isWindows))
+          .statSync()
+          .modified;
       if (updatedAt != null && updatedAt.isAfter(lastCompiled)) {
         invalidatedFiles.add(uri);
       }
