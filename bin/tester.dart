@@ -15,6 +15,7 @@ const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
 final argParser = ArgParser()
   ..addFlag('watch', abbr: 'b', help: 'Watch file changes and re-run tests.')
   ..addFlag('verbose', abbr: 'v')
+  ..addOption('flutter-root', help: 'the path to the root of a flutter checkout, if it is not available on the PATH')
   ..addOption(
     'platform',
     help: 'The platform to run tests on.',
@@ -30,7 +31,9 @@ Future<void> main(List<String> args) async {
 
   var argResults = argParser.parse(args);
   String flutterRoot;
-  if (Platform.isWindows) {
+  if (argResults['flutter-root'] != null) {
+    flutterRoot = argResults['flutter_root'] as String;
+  } if (Platform.isWindows) {
     flutterRoot = File((await Process.run('where', <String>['flutter']))
             .stdout
             .split('\n')
