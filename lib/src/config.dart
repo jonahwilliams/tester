@@ -2,11 +2,99 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:file/file.dart';
+import 'package:file/local.dart';
 import 'package:meta/meta.dart';
 
 /// Configuration necessary to bootstrap the test runner.
 class Config {
-  const Config({
+  factory Config({
+    @required String flutterRoot,
+    @required TargetPlatform targetPlatform,
+    @required String workspacePath,
+    @required String packageRootPath,
+    @required List<Uri> tests,
+    @required String cacheName,
+    FileSystem fileSystem = const LocalFileSystem(),
+  }) {
+    return Config._(
+      targetPlatform: targetPlatform,
+      workspacePath: workspacePath,
+      packageRootPath: packageRootPath,
+      tests: tests,
+      frontendServerPath: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/artifacts/engine',
+        cacheName,
+        'frontend_server.dart.snapshot',
+      ),
+      dartPath: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/dart-sdk/bin/dart',
+      ),
+      dartSdkRoot: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/dart-sdk',
+      ),
+      platformDillUri: fileSystem
+          .file(fileSystem.path.join(
+            flutterRoot,
+            'bin/cache/dart-sdk/lib/_internal/vm_platform_strong.dill',
+          ))
+          .absolute
+          .uri,
+      flutterPatchedSdkRoot: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/artifacts/engine/common/flutter_patched_sdk',
+      ),
+      flutterTesterPath: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/artifacts/engine',
+        cacheName,
+        'flutter_tester',
+      ),
+      flutterWebPlatformDillUri: fileSystem
+          .file(
+            fileSystem.path.join(
+              flutterRoot,
+              'bin/cache/flutter_web_sdk/kernel/flutter_ddc_sdk.dill',
+            ),
+          )
+          .uri,
+      flutterWebDartSdk: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/flutter_web_sdk/kernel/amd/dart_sdk.js',
+      ),
+      flutterWebDartSdkSourcemaps: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/flutter_web_sdk/kernel/amd/dart_sdk.js.map',
+      ),
+      dartWebPlatformDillUri: fileSystem
+          .file(fileSystem.path.join(
+            flutterRoot,
+            'bin/cache/dart-sdk/lib/_internal/ddc_sdk.dill',
+          ))
+          .uri,
+      webDartSdk: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/dart-sdk/lib/dev_compiler/kernel/amd/dart_sdk.js',
+      ),
+      webDartSdkSourcemaps: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/dart-sdk/lib/dev_compiler/kernel/amd/dart_sdk.js.map',
+      ),
+      requireJS: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/dart-sdk/lib/dev_compiler/kernel/amd/require.js',
+      ),
+      stackTraceMapper: fileSystem.path.join(
+        flutterRoot,
+        'bin/cache/dart-sdk/lib/dev_compiler/web/dart_stack_trace_mapper.js',
+      ),
+    );
+  }
+
+  const Config._({
     @required this.dartPath,
     @required this.frontendServerPath,
     @required this.workspacePath,

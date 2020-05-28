@@ -1,0 +1,8 @@
+name: test_shim
+
+environment:
+  sdk: '>=2.8.0 <3.0.0'
+
+dependencies:
+  test_api:
+  test: 1.14.5

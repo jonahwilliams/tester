@@ -94,66 +94,8 @@ Future<void> main(List<String> args) async {
     workspacePath: workspace.path,
     packageRootPath: Directory(projectDirectory).absolute.path,
     tests: tests,
-    frontendServerPath: path.join(
-      flutterRoot,
-      'bin/cache/artifacts/engine',
-      cacheName,
-      'frontend_server.dart.snapshot',
-    ),
-    dartPath: path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/bin/dart',
-    ),
-    dartSdkRoot: path.normalize(path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk',
-    )),
-    platformDillUri: File(path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/lib/_internal/vm_platform_strong.dill',
-    )).absolute.uri,
-    flutterPatchedSdkRoot: path.join(
-      flutterRoot,
-      'bin/cache/artifacts/engine/common/flutter_patched_sdk',
-    ),
-    flutterTesterPath: path.join(
-      flutterRoot,
-      'bin/cache/artifacts/engine',
-      cacheName,
-      'flutter_tester',
-    ),
-    flutterWebPlatformDillUri: File(path.join(
-      flutterRoot,
-      'bin/cache/flutter_web_sdk/kernel/flutter_ddc_sdk.dill',
-    )).uri,
-    flutterWebDartSdk: path.join(
-      flutterRoot,
-      'bin/cache/flutter_web_sdk/kernel/amd/dart_sdk.js',
-    ),
-    flutterWebDartSdkSourcemaps: path.join(
-      flutterRoot,
-      'bin/cache/flutter_web_sdk/kernel/amd/dart_sdk.js.map',
-    ),
-    dartWebPlatformDillUri: File(path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/lib/_internal/ddc_sdk.dill',
-    )).uri,
-    webDartSdk: path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/lib/dev_compiler/kernel/amd/dart_sdk.js',
-    ),
-    webDartSdkSourcemaps: path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/lib/dev_compiler/kernel/amd/dart_sdk.js.map',
-    ),
-    requireJS: path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/lib/dev_compiler/kernel/amd/require.js',
-    ),
-    stackTraceMapper: path.join(
-      flutterRoot,
-      'bin/cache/dart-sdk/lib/dev_compiler/web/dart_stack_trace_mapper.js',
-    ),
+    cacheName: cacheName,
+    flutterRoot: flutterRoot,
   );
   runApplication(
     verbose: argResults['verbose'] as bool,

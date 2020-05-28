@@ -38,7 +38,6 @@ class VmTestIsolate extends TestIsolate {
   final TestRunner _testRunner;
   vm_service.IsolateRef _testIsolateRef;
   vm_service.VmService _vmService;
-  StreamSubscription<void> _logSubscription;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
@@ -56,8 +55,13 @@ class VmTestIsolate extends TestIsolate {
       await _vmService.resume(isolate.id);
     }
 
-    await _vmService.streamListen('Stdout');
-    _logSubscription = _vmService.onStdoutEvent.listen((event) {
+    await _vmService.streamListen(vm_service.EventStreams.kStdout);
+    _vmService.onStdoutEvent.listen((event) {
+      var message = utf8.decode(base64.decode(event.bytes));
+      print(message);
+    });
+    await _vmService.streamListen(vm_service.EventStreams.kLogging);
+    _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
     });
@@ -65,7 +69,6 @@ class VmTestIsolate extends TestIsolate {
 
   @override
   FutureOr<void> dispose() {
-    _logSubscription?.cancel();
     _vmService?.dispose();
     return _testRunner?.dispose();
   }
@@ -129,8 +132,13 @@ class WebTestIsolate extends TestIsolate {
     await testRunner.start(entrypoint, onExit);
     _vmService = testRunner.vmService;
 
-    await _vmService.streamListen('Stdout');
-    _logSubscription = _vmService.onStdoutEvent.listen((event) {
+    await _vmService.streamListen(vm_service.EventStreams.kStdout);
+    _vmService.onStdoutEvent.listen((event) {
+      var message = utf8.decode(base64.decode(event.bytes));
+      print(message);
+    });
+    await _vmService.streamListen(vm_service.EventStreams.kLogging);
+    _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
     });

@@ -2,8 +2,3 @@ name: test_project
 
 environment:
   sdk: '>=2.8.0 <3.0.0'
-
-dev_dependencies:
-  tester_test:
-    git:
-      url: git@github.com:jonahwilliams/tester_test.git
