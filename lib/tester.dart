@@ -21,7 +21,7 @@ void runApplication({
   @required bool batchMode,
   @required Config config,
 }) async {
-  var progress = StdoutProgress();
+  var progress = Progress();
   progress.start('Loading the test isolate');
   var compiler = Compiler(
     config: config,
