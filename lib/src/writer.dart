@@ -69,6 +69,11 @@ class CiTestWriter implements TestWriter {
 
   @override
   void writeTest(TestResult result, TestInfo testInfo) {
+    if (result.passed) {
+      passed += 1;
+    } else {
+      failed += 1;
+    }
     print(
         '${result.testFileUri}${result.testName}: ${result.passed ? 'PASS' : 'FAIL'}');
   }
