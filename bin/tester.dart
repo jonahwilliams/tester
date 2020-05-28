@@ -18,6 +18,7 @@ final argParser = ArgParser()
   ..addOption('flutter-root',
       help:
           'the path to the root of a flutter checkout, if it is not available on the PATH')
+  ..addFlag('ci')
   ..addOption(
     'platform',
     help: 'The platform to run tests on.',
@@ -158,5 +159,6 @@ Future<void> main(List<String> args) async {
     verbose: argResults['verbose'] as bool,
     batchMode: !(argResults['watch'] as bool),
     config: config,
+    ci: argResults['ci'] as bool,
   );
 }

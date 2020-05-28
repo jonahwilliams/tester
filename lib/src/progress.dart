@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:io';
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:dart_console/dart_console.dart';
 
 abstract class Progress {
-  factory Progress() {
-    if (false) {
-      return StdoutProgress();
+  factory Progress({@required bool ci}) {
+    if (ci) {
+      return CiProgress();
     }
-    return CiProgress();
+    return StdoutProgress();
   }
 
   void start(String message);

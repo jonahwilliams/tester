@@ -18,14 +18,15 @@ abstract class TestWriter {
   factory TestWriter({
     @required String projectRoot,
     @required bool verbose,
+    @required bool ci,
   }) {
-    if (false) {
-      return TerminalTestWriter(
-        projectRoot: projectRoot,
-        verbose: verbose,
-      );
+    if (ci) {
+      return CiTestWriter();
     }
-    return CiTestWriter();
+    return TerminalTestWriter(
+      projectRoot: projectRoot,
+      verbose: verbose,
+    );
   }
 
   /// Update the results of a test.
