@@ -6,7 +6,9 @@ import 'package:test/test.dart' show hasLength;
 import 'package:tester_test/tester_test.dart';
 
 /// Tests that a sync function completes normally
-void testNoException() {}
+void testNoException() {
+  assert(false);
+}
 
 /// Tests that this can interop with `package:test`
 void testExpectAdditionWorks() {

@@ -146,18 +146,30 @@ class TerminalTestWriter extends TestWriter {
         index += 1;
       }
       console
+        ..setForegroundExtendedColor(_kGreyColor)
+        ..write('      | ')
         ..setForegroundColor(ConsoleColor.brightRed)
-        ..writeLine((' ' * (prefix.length + testFrame.column - 1)) + '^')
-        ..resetColorAttributes()
-        ..write('\n');
+        ..writeLine((' ' * (prefix.length + testFrame.column - 5)) + '^')
+        ..resetColorAttributes();
+
+      prefix = '    $index| ';
+      if (testLines.length > index) {
+        console
+          ..setForegroundExtendedColor(_kGreyColor)
+          ..write(prefix)
+          ..resetColorAttributes()
+          ..writeLine(testLines[index])
+          ..writeLine();
+      }
     }
 
-    if (verbose) {
-      for (var frame in trace.frames) {
-        console.writeLine(_indent(frame.toString(), 4));
+    for (var frame in trace.frames) {
+      if (!verbose && frame == testFrame) {
+        break;
       }
-      console.writeLine();
+      console.writeLine(_indent(frame.toString(), 4));
     }
+    console.writeLine();
   }
 
   @override
