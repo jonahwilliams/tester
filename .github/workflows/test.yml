@@ -28,5 +28,5 @@ jobs:
         run: ../flutter/bin/flutter precache --no-android --no-ios
         working-directory: tester
       - name: test
-        run: ../flutter/bin/dart bin/tester.dart --platform=dart --flutter-root=../ -v
+        run: ../flutter/bin/dart bin/tester.dart --platform=dart --flutter-root=../flutter -v
         working-directory: tester

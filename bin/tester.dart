@@ -32,11 +32,11 @@ Future<void> main(List<String> args) async {
   }
 
   var argResults = argParser.parse(args);
+
   String flutterRoot;
   if (argResults['flutter-root'] != null) {
     flutterRoot = argResults['flutter-root'] as String;
-  }
-  if (Platform.isWindows) {
+  } else if (Platform.isWindows) {
     flutterRoot = File((await Process.run('where', <String>['flutter']))
             .stdout
             .split('\n')
@@ -93,16 +93,16 @@ Future<void> main(List<String> args) async {
     workspacePath: workspace.path,
     packageRootPath: Directory(projectDirectory).absolute.path,
     tests: tests,
-    frontendServerPath: path.normalize(path.join(
+    frontendServerPath: path.join(
       flutterRoot,
       'bin/cache/artifacts/engine',
       cacheName,
       'frontend_server.dart.snapshot',
-    )),
-    dartPath: path.normalize(path.join(
+    ),
+    dartPath: path.join(
       flutterRoot,
       'bin/cache/dart-sdk/bin/dart',
-    )),
+    ),
     dartSdkRoot: path.normalize(path.join(
       flutterRoot,
       'bin/cache/dart-sdk',
@@ -154,11 +154,6 @@ Future<void> main(List<String> args) async {
       'bin/cache/dart-sdk/lib/dev_compiler/web/dart_stack_trace_mapper.js',
     ),
   );
-  print(config.frontendServerPath);
-  print(File(config.frontendServerPath).existsSync());
-  print(config.dartPath);
-  print(File(config.frontendServerPath).existsSync());
-
   runApplication(
     verbose: argResults['verbose'] as bool,
     batchMode: !(argResults['watch'] as bool),
