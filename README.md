@@ -1,6 +1,6 @@
 # tester
 
-![example](https://user-images.githubusercontent.com/8975114/83311624-9b562f00-a1c4-11ea-9716-92cd3c455b9e.PNG)
+<img width="650" src="https://user-images.githubusercontent.com/8975114/83311624-9b562f00-a1c4-11ea-9716-92cd3c455b9e.PNG">
 
 
 An experimental test runner with no runtime dependencies. Precompiled binaries for windows, linux, and macOS can be found in the releases tab.
