@@ -3,7 +3,7 @@
 <img width="650" src="https://user-images.githubusercontent.com/8975114/83311624-9b562f00-a1c4-11ea-9716-92cd3c455b9e.PNG">
 
 
-An experimental test runner with no runtime dependencies. Precompiled binaries for windows, linux, and macOS can be found in the releases tab.
+An experimental test runner with no runtime dependencies. Pre-compiled binaries for windows, linux, and macOS can be found in the releases tab.
 
 This should be run from the root of a dart project containing `pubspec.yaml`. By default, it will run all files in `test/` ending in `_test.dart`. It also accepts multiple positional arguments for one or more individual test files.
 

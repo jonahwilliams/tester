@@ -445,7 +445,7 @@ packages:
   test_shim:
     dependency: "direct dev"
     description:
-      path: test_shim
+      path: "../test_shim"
       relative: true
     source: path
     version: "0.0.0"

@@ -27,4 +27,4 @@ dependencies:
 
 dev_dependencies:
   test_shim:
-    path: test_shim
+    path: ../test_shim
