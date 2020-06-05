@@ -17,16 +17,16 @@ jobs:
           path: flutter
       - name: Dependencies
         run: ../flutter/bin/dart pub get
-        working-directory: tester
+        working-directory: tester/tester
       - name: Analyze
         run: ../flutter/bin/dart analyze .
-        working-directory: tester
+        working-directory: tester/tester
       - name: Format
         run: ../flutter/bin/dart format --set-exit-if-changed .
-        working-directory: tester
+        working-directory: tester/tester
       - name: precache
         run: ../flutter/bin/flutter precache --no-android --no-ios
-        working-directory: tester
+        working-directory: tester/tester
       - name: test
         run: ../flutter/bin/dart bin/tester.dart --platform=dart --flutter-root=../flutter --ci -v
-        working-directory: tester
+        working-directory: tester/tester
