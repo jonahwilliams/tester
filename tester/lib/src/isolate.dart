@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:meta/meta.dart';
-import 'package:vm_service/vm_service.dart' as vm_service;
-import 'package:vm_service/vm_service_io.dart' as vm_service;
+import 'package:vm_service/vm_service.dart';
+import 'package:vm_service/vm_service_io.dart';
 
 import 'runner.dart';
 import 'test_info.dart';
@@ -27,6 +27,8 @@ abstract class TestIsolate {
 
   /// Reload the application with the incremental file defined at `incrementalDill`.
   Future<void> reload(Uri incrementalDill);
+
+  VmService get vmService;
 }
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
@@ -36,31 +38,31 @@ class VmTestIsolate extends TestIsolate {
   }) : _testRunner = testRunner;
 
   final TestRunner _testRunner;
-  vm_service.IsolateRef _testIsolateRef;
-  vm_service.VmService _vmService;
+  IsolateRef _testIsolateRef;
+  VmService _vmService;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
     var launchResult = await _testRunner.start(entrypoint, onExit);
     var websocketUrl =
         launchResult.serviceUri.replace(scheme: 'ws').toString() + 'ws';
-    _vmService = await vm_service.vmServiceConnectUri(websocketUrl);
+    _vmService = await vmServiceConnectUri(websocketUrl);
 
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.firstWhere(
         (element) => element.name.contains(launchResult.isolateName));
     var isolate = await _vmService.getIsolate(_testIsolateRef.id);
     if (isolate.pauseEvent == null ||
-        isolate.pauseEvent.kind != vm_service.EventKind.kResume) {
+        isolate.pauseEvent.kind != EventKind.kResume) {
       await _vmService.resume(isolate.id);
     }
 
-    await _vmService.streamListen(vm_service.EventStreams.kStdout);
+    await _vmService.streamListen(EventStreams.kStdout);
     _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
     });
-    await _vmService.streamListen(vm_service.EventStreams.kLogging);
+    await _vmService.streamListen(EventStreams.kLogging);
     _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
@@ -86,7 +88,7 @@ class VmTestIsolate extends TestIsolate {
         },
       ))
           .json;
-    } on vm_service.RPCError catch (err, st) {
+    } on RPCError catch (err, st) {
       return TestResult(
         testFileUri: testInfo.testFileUri,
         testName: testInfo.name,
@@ -110,6 +112,9 @@ class VmTestIsolate extends TestIsolate {
       rootLibUri: incrementalDill.toString(),
     );
   }
+
+  @override
+  VmService get vmService => _vmService;
 }
 
 class WebTestIsolate extends TestIsolate {
@@ -118,7 +123,7 @@ class WebTestIsolate extends TestIsolate {
   });
 
   final ChromeTestRunner testRunner;
-  vm_service.VmService _vmService;
+  VmService _vmService;
   StreamSubscription<void> _logSubscription;
 
   @override
@@ -132,12 +137,12 @@ class WebTestIsolate extends TestIsolate {
     await testRunner.start(entrypoint, onExit);
     _vmService = testRunner.vmService;
 
-    await _vmService.streamListen(vm_service.EventStreams.kStdout);
+    await _vmService.streamListen(EventStreams.kStdout);
     _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
     });
-    await _vmService.streamListen(vm_service.EventStreams.kLogging);
+    await _vmService.streamListen(EventStreams.kLogging);
     _vmService.onStdoutEvent.listen((event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
@@ -179,7 +184,7 @@ class WebTestIsolate extends TestIsolate {
         },
       ))
           .json;
-    } on vm_service.RPCError catch (err, st) {
+    } on RPCError catch (err, st) {
       return TestResult(
         testFileUri: testInfo.testFileUri,
         testName: testInfo.name,
@@ -195,6 +200,9 @@ class WebTestIsolate extends TestIsolate {
       testInfo.testFileUri,
     );
   }
+
+  @override
+  VmService get vmService => _vmService;
 }
 
 /// The result of a test execution.

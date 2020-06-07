@@ -31,3 +31,7 @@ flutter config --enable-web
 ```
 
 By default, tester runs all tests and then exits. It can also be configured with `--watch`, and will rerun any updated tests and stay resident.
+
+### Coverage
+
+Code coverage can be measured by passing --coverage (batch-mode only for now). This requires a `lcov` executable to be installed. On windows, this can be done by done fairly easily by downloading Perl and the lcov source (lcov is a giant Perl script).

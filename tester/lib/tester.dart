@@ -4,8 +4,10 @@
 
 import 'dart:io';
 
+import 'package:file/local.dart';
 import 'package:meta/meta.dart';
 
+import 'src/coverage.dart';
 import 'src/test_info.dart';
 import 'src/compiler.dart';
 import 'src/config.dart';
@@ -20,7 +22,10 @@ void runApplication({
   @required bool batchMode,
   @required bool ci,
   @required Config config,
+  @required String coverageOutputPath,
+  @required String appName,
 }) async {
+  var coverage = CoverageService();
   var compiler = Compiler(
     config: config,
     compilerMode: config.targetPlatform,
@@ -95,6 +100,17 @@ void runApplication({
       }
     }
     writer.writeSummary();
+    if (coverageOutputPath != null) {
+      print('Collecting coverage data...');
+      await coverage.collectCoverageIsolate(testIsolate.vmService,
+          (String libraryName) => libraryName.contains(appName));
+      await coverage.writeCoverageData(
+        coverageOutputPath,
+        packagesPath: const LocalFileSystem()
+            .path
+            .join(config.packageRootPath, '.packages'),
+      );
+    }
     testIsolate.dispose();
     exit(writer.exitCode);
   }
