@@ -9,28 +9,50 @@ import 'package:args/args.dart';
 import 'package:tester/src/config.dart';
 import 'package:tester/tester.dart';
 import 'package:path/path.dart' as path;
+import 'package:yaml/yaml.dart';
 
 const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
 
 final argParser = ArgParser()
   ..addFlag('watch', abbr: 'b', help: 'Watch file changes and re-run tests.')
+  ..addFlag(
+    'coverage',
+    help: 'Measure code coverage during test execution. By default this is '
+        'output to coverage/lcof.info. Use the option --coverage-output to '
+        'configure a different file.',
+  )
+  ..addOption(
+    'coverage-output',
+    help: 'The output file for code coverage measurements.',
+    defaultsTo: 'coverage/lcov.info',
+  )
   ..addFlag('verbose', abbr: 'v')
   ..addOption('flutter-root',
       help:
-          'the path to the root of a flutter checkout, if it is not available on the PATH')
-  ..addFlag('ci')
+          'the path to the root of a flutter checkout, if it is not available on PATH.')
+  ..addFlag('ci', help: 'Run with simpler output optimized for running on CI.')
   ..addOption(
     'platform',
-    help: 'The platform to run tests on.',
+    help:
+        'The Dart platform where tests will be run. This affects the available '
+        'dart libraries as well as the compilation strategy.',
     allowed: _allowedPlatforms,
     defaultsTo: 'dart',
   );
 
 Future<void> main(List<String> args) async {
-  if (!File(path.join(Directory.current.path, 'pubspec.yaml')).existsSync()) {
+  if (args.contains('-h') || args.contains('--help')) {
+    print(argParser.usage);
+    return;
+  }
+
+  var pubspecFile = File(path.join(Directory.current.path, 'pubspec.yaml'));
+  if (!pubspecFile.existsSync()) {
     print('tester must be run in a directory with a pubspec.yaml.');
     exit(1);
   }
+  var appName = (loadYamlNode(pubspecFile.readAsStringSync())
+      as YamlMap)['name'] as String;
 
   var argResults = argParser.parse(args);
 
@@ -102,5 +124,9 @@ Future<void> main(List<String> args) async {
     batchMode: !(argResults['watch'] as bool),
     config: config,
     ci: argResults['ci'] as bool,
+    appName: appName,
+    coverageOutputPath: (argResults['coverage'] as bool)
+        ? argResults['coverage-output'] as String
+        : null,
   );
 }
