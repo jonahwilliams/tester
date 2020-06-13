@@ -39,6 +39,12 @@ final argParser = ArgParser()
         'dart libraries as well as the compilation strategy.',
     allowed: _allowedPlatforms,
     defaultsTo: 'dart',
+  )
+  ..addOption(
+    'timeout',
+    help: 'The maximum number of seconds a single test can elapse before it is '
+        'consider a failure. To disable timeouts, pass -1 as a value.',
+    defaultsTo: '15',
   );
 
 Future<void> main(List<String> args) async {
@@ -91,7 +97,6 @@ Future<void> main(List<String> args) async {
   }
 
   var projectDirectory = Directory.current.path;
-
   List<Uri> tests;
   if (argResults.rest.isEmpty) {
     tests = Directory(path.join(projectDirectory, 'test'))
@@ -121,13 +126,13 @@ Future<void> main(List<String> args) async {
     flutterRoot: flutterRoot,
   );
   runApplication(
-    verbose: argResults['verbose'] as bool,
-    batchMode: !(argResults['watch'] as bool),
-    config: config,
-    ci: argResults['ci'] as bool,
-    appName: appName,
-    coverageOutputPath: (argResults['coverage'] as bool)
-        ? argResults['coverage-output'] as String
-        : null,
-  );
+      verbose: argResults['verbose'] as bool,
+      batchMode: !(argResults['watch'] as bool),
+      config: config,
+      ci: argResults['ci'] as bool,
+      appName: appName,
+      coverageOutputPath: (argResults['coverage'] as bool)
+          ? argResults['coverage-output'] as String
+          : null,
+      timeout: int.tryParse(argResults['timeout'] as String) ?? 15);
 }

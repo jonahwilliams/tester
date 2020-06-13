@@ -16,7 +16,8 @@ import 'package:uuid/uuid.dart';
 import 'config.dart';
 import 'test_info.dart';
 
-const _kVmTestMain = r'''
+String generateVmTestMain(int timeout) =>
+    '''
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -26,19 +27,27 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
   var testFunction = testRegistry[libraryUri][name];
 
   var passed = false;
+  var timeout = false;
   dynamic error;
   dynamic stackTrace;
   try {
-    await Future(() => testFunction());
+''' +
+    ((timeout == -1)
+        ? 'await Future(() => testFunction());'
+        : 'await Future(() => testFunction()).timeout(const Duration(seconds: $timeout));') +
+    '''
     passed = true;
   } catch (err, st) {
     error = err;
     stackTrace = st;
+    if (err is TimeoutException) {
+      timeout = true;
+    }
   } finally {
     return <String, Object>{
       'test': name,
       'passed': passed,
-      'timeout': false,
+      'timeout': timeout,
       'error': error?.toString(),
       'stackTrace': stackTrace?.toString(),
     };
@@ -56,7 +65,8 @@ Future<void> main() {
 }
 ''';
 
-const String _kFlutterWebTestMain = '''
+String generateFlutterWebTestMain(int timeout) =>
+    '''
 import 'dart:convert';
 import 'dart:async';
 import 'dart:developer';
@@ -66,19 +76,28 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
   var testFunction = testRegistry[libraryUri][name];
 
   var passed = false;
+  var timeout = false;
   dynamic error;
   dynamic stackTrace;
   try {
+''' +
+    ((timeout == -1)
+        ? 'await Future(() => testFunction());'
+        : 'await Future(() => testFunction()).timeout(const Duration(seconds: $timeout));') +
+    '''
     await Future(() => testFunction());
     passed = true;
   } catch (err, st) {
     error = err;
     stackTrace = st;
+    if (err is TimeoutException) {
+      timeout = true;
+    }
   } finally {
     return <String, Object>{
       'test': name,
       'passed': passed,
-      'timeout': false,
+      'timeout': timeout,
       'error': error?.toString(),
       'stackTrace': stackTrace?.toString(),
     };
@@ -104,6 +123,7 @@ class Compiler {
   Compiler({
     @required this.config,
     @required this.compilerMode,
+    @required this.timeout,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
@@ -114,6 +134,7 @@ class Compiler {
   final Config config;
   final TargetPlatform compilerMode;
   final Platform platform;
+  final int timeout;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -133,7 +154,7 @@ class Compiler {
     }
     _mainFile =
         fileSystem.file(fileSystem.path.join(workspace.path, 'main.dart'));
-    _regenerateMain(testInformation);
+    _regenerateMain(testInformation, timeout);
 
     var dillOutput = fileSystem
         .file(fileSystem.path
@@ -186,7 +207,7 @@ class Compiler {
     List<Uri> invalidated,
     Map<Uri, List<TestInfo>> testInformation,
   ) async {
-    _regenerateMain(testInformation);
+    _regenerateMain(testInformation, timeout);
     _stdoutHandler.reset();
     var pendingResult = _stdoutHandler.compilerOutput.future;
     var id = Uuid().v4();
@@ -252,7 +273,7 @@ class Compiler {
     throw StateError('_compilerMode was null');
   }
 
-  void _regenerateMain(Map<Uri, List<TestInfo>> testInformation) {
+  void _regenerateMain(Map<Uri, List<TestInfo>> testInformation, int timeout) {
     var contents = StringBuffer();
     for (var testFileUri in testInformation.keys) {
       var relativePath = fileSystem
@@ -265,16 +286,16 @@ class Compiler {
     }
     switch (compilerMode) {
       case TargetPlatform.dart:
-        contents.write(_kVmTestMain);
+        contents.write(generateVmTestMain(timeout));
         break;
       case TargetPlatform.web:
-        contents.write(_kVmTestMain);
+        contents.write(generateVmTestMain(timeout));
         break;
       case TargetPlatform.flutter:
-        contents.write(_kVmTestMain);
+        contents.write(generateVmTestMain(timeout));
         break;
       case TargetPlatform.flutterWeb:
-        contents.write(_kFlutterWebTestMain);
+        contents.write(generateFlutterWebTestMain(timeout));
         break;
     }
     contents.writeln('var testRegistry = {');

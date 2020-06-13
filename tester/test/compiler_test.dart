@@ -64,6 +64,7 @@ Future<void> testDartVmCompile() async {
     compilerMode: TargetPlatform.dart,
     fileSystem: fileSystem,
     processManager: processManager,
+    timeout: -1,
   );
 
   var uri = await compiler.start({});
@@ -114,6 +115,7 @@ Future<void> testFlutterCompile() async {
     compilerMode: TargetPlatform.flutter,
     fileSystem: fileSystem,
     processManager: processManager,
+    timeout: -1,
   );
 
   var uri = await compiler.start({});
@@ -164,6 +166,7 @@ Future<void> testDartWebCompile() async {
     compilerMode: TargetPlatform.web,
     fileSystem: fileSystem,
     processManager: processManager,
+    timeout: -1,
   );
 
   var uri = await compiler.start({});
@@ -216,6 +219,7 @@ Future<void> testFlutterWebCompile() async {
     compilerMode: TargetPlatform.flutterWeb,
     fileSystem: fileSystem,
     processManager: processManager,
+    timeout: -1,
   );
 
   var uri = await compiler.start({});

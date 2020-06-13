@@ -24,7 +24,7 @@ SET program_entrypoint="package:tester/src/executable.dart"
     SET /P current_version=<"%current_version%"
     SET /P installed_version=<"%version_stamp%"
     SET /P dart_version=<"%dart_stamp%"
-    CALL dart --version 2> "%temp_dart_ver%"
+    CALL dart --disable-dart-dev --version 2> "%temp_dart_ver%"
     SET /P current_dart=<"%temp_dart_ver%"
 
     IF !current_version! NEQ !installed_version! GOTO snapshot
@@ -35,10 +35,11 @@ SET program_entrypoint="package:tester/src/executable.dart"
     :snapshot
         ECHO precompiling tester snapshot...
         CALL dart pub get --no-precompile > nul
-        CALL dart --snapshot="%snapshot_path%" --snapshot-kind=app-jit --packages="%package_config%" --no-enable-mirrors "%program_entrypoint%" > NUL
+
+        CALL dart --disable-dart-dev --snapshot="%snapshot_path%" --snapshot-kind=app-jit --packages="%package_config%" --no-enable-mirrors "%program_entrypoint%" "test/compiler_test.dart" > NUL
 
         >"%version_stamp%" ECHO %current_version%
-        CALL dart --version 2> "%dart_stamp%"
+        CALL dart --disable-dart-dev --version 2> "%dart_stamp%"
         GOTO run_program
 
     :run_program
