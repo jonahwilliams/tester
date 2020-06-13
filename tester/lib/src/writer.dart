@@ -74,6 +74,8 @@ class CiTestWriter implements TestWriter {
     if (result.passed) {
       passed += 1;
     } else {
+      print(result.errorMessage);
+      print(result.stackTrace);
       failed += 1;
     }
     print(
