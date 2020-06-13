@@ -10,6 +10,10 @@ import 'package:test_shim/test_shim.dart';
 /// Spin up a tester process running a test that takes longer
 /// than the configured timeout.
 Future<void> testTimeoutConfigurationTimesout() async {
+  if (!Platform.isWindows) {
+    // TODO(jonahwilliams): add entrypoint for linux/mac
+    return;
+  }
   var processManager = LocalProcessManager();
   var tester = File('bin/tester').absolute.path;
   var result = await processManager.run(
