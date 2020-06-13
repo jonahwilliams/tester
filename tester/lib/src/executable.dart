@@ -28,9 +28,6 @@ final argParser = ArgParser()
     defaultsTo: 'coverage/lcov.info',
   )
   ..addFlag('verbose', abbr: 'v')
-  ..addOption('flutter-root',
-      help:
-          'the path to the root of a flutter checkout, if it is not available on PATH.')
   ..addFlag('ci', help: 'Run with simpler output optimized for running on CI.')
   ..addOption(
     'platform',
@@ -64,8 +61,8 @@ Future<void> main(List<String> args) async {
   var argResults = argParser.parse(args);
 
   String flutterRoot;
-  if (argResults['flutter-root'] != null) {
-    flutterRoot = argResults['flutter-root'] as String;
+  if (Platform.environment['FLUTTER_ROOT'] != null) {
+    flutterRoot = Platform.environment['FLUTTER_ROOT'];
   } else if (Platform.isWindows) {
     flutterRoot = File((await Process.run('where', <String>['flutter']))
             .stdout
