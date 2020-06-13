@@ -31,6 +31,7 @@ Future<void> testDartVmCompile() async {
     FakeCommand(
         command: [
           '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
           '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
           '--target=vm',
           '--sdk-root=/flutter/bin/cache/dart-sdk',
@@ -78,6 +79,7 @@ Future<void> testFlutterCompile() async {
     FakeCommand(
         command: [
           '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
           '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
           '--target=flutter',
           '--sdk-root=/flutter/bin/cache/artifacts/engine/common/flutter_patched_sdk',
@@ -128,6 +130,7 @@ Future<void> testDartWebCompile() async {
     FakeCommand(
         command: [
           '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
           '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
           '--target=dartdevc',
           '--sdk-root=/flutter/bin/cache/dart-sdk',
@@ -176,6 +179,7 @@ Future<void> testFlutterWebCompile() async {
     FakeCommand(
         command: [
           '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
           '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
           '--target=dartdevc',
           '-Ddart.vm.profile=false',

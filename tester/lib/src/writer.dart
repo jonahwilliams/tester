@@ -64,7 +64,9 @@ class CiTestWriter implements TestWriter {
   @override
   void writeSummary() {
     print(
-        '${passed} passed, ${failed} failed out of ${passed + failed} in ${stopwatch.elapsedMilliseconds} ms');
+      '${passed} passed, ${failed} failed out of ${passed + failed}'
+      ' in ${stopwatch.elapsedMilliseconds} ms',
+    );
   }
 
   @override
@@ -75,7 +77,9 @@ class CiTestWriter implements TestWriter {
       failed += 1;
     }
     print(
-        '${result.testFileUri}${result.testName}: ${result.passed ? 'PASS' : 'FAIL'}');
+      '${result.testFileUri}${result.testName}:'
+      ' ${result.passed ? 'PASS' : 'FAIL'}',
+    );
   }
 }
 
@@ -194,14 +198,14 @@ class TerminalTestWriter implements TestWriter {
         console.writeLine(line);
         index += 1;
       }
+      var spaces = indentWidth - index.toString().length;
       console
         ..setForegroundExtendedColor(_kGreyColor)
         ..write('${' ' * indentWidth}| ')
         ..setForegroundColor(ConsoleColor.brightRed)
-        ..writeLine((' ' * (prefix.length + testFrame.column - 5)) + '^')
+        ..writeLine((' ' * (testFrame.column + spaces - 5)) + '^')
         ..resetColorAttributes();
 
-      var spaces = indentWidth - index.toString().length;
       prefix = '${' ' * (spaces)}$index| ';
       if (testLines.length > index - 1) {
         console

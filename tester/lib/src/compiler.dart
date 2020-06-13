@@ -146,6 +146,7 @@ class Compiler {
         .uri;
     var args = <String>[
       config.dartPath,
+      '--disable-dart-dev',
       config.frontendServerPath,
       ..._getArgsForCompilerMode,
       '--enable-asserts',
