@@ -15,20 +15,20 @@ jobs:
           repository: flutter/flutter
           fetch-depth: 0
           path: flutter
+      - name: Add Flutter SDK to PATH
+        run: "echo ::add-path::/flutter/bin/"
       - name: Dependencies
-        run: ../../flutter/bin/dart pub get
+        run: dart pub get
         working-directory: tester/tester
       - name: Analyze
-        run: ../../flutter/bin/dart analyze .
+        run: dart analyze .
         working-directory: tester/tester
       - name: Format
-        run: ../../flutter/bin/dart format --set-exit-if-changed .
+        run: dart format --set-exit-if-changed .
         working-directory: tester/tester
       - name: precache
-        run: ../../flutter/bin/flutter precache --no-android --no-ios
+        run: flutter precache --no-android --no-ios
         working-directory: tester/tester
       - name: test
         run: bin/tester --platform=dart --flutter-root=../../flutter --ci -v
         working-directory: tester/tester
-        env:
-          PATH: ../../flutter/bin:$PATH
