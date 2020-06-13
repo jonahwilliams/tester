@@ -34,30 +34,9 @@ class CoverageService {
       return false;
     }
 
-    var coverageFile = fileSystem.file(coveragePath)
+    fileSystem.file(coveragePath)
       ..createSync(recursive: true)
       ..writeAsStringSync(coverageData, flush: true);
-
-    var tempDir =
-        fileSystem.systemTempDirectory.createTempSync('tester_coverage.');
-    try {
-      var sourceFile = coverageFile
-          .copySync(fileSystem.path.join(tempDir.path, 'lcov.source.info'));
-      var result = await processManager.run(<String>[
-        'lcov',
-        '--add-tracefile',
-        coveragePath,
-        '--add-tracefile',
-        sourceFile.path,
-        '--output-file',
-        coverageFile.path,
-      ]);
-      if (result.exitCode != 0) {
-        return false;
-      }
-    } finally {
-      tempDir.deleteSync(recursive: true);
-    }
     return true;
   }
 
