@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Copyright 2014 The Flutter Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e
+
+# Needed because if it is set, cd may print the path it changed to.
+unset CDPATH
+
+function follow_links() {
+  cd -P "${1%/*}"
+  local file="$PWD/${1##*/}"
+  while [[ -h "$file" ]]; do
+    # On Mac OS, readlink -f doesn't work.
+    cd -P "${file%/*}"
+    file="$(readlink "$file")"
+    cd -P "${file%/*}"
+    file="$PWD/${file##*/}"
+  done
+  echo "$PWD/${file##*/}"
+}
+
+# Convert a filesystem path to a format usable by Dart's URI parser.
+function path_uri() {
+  # Reduce multiple leading slashes to a single slash.
+  echo "$1" | sed -E -e "s,^/+,/,"
+}
+
+PROG_NAME="$(path_uri "$(follow_links "$BASH_SOURCE")")"
+BIN_DIR="$(cd "${PROG_NAME%/*}" ; pwd -P)"
+TESTER_ROOT="$(cd "${BIN_DIR}/.." ; pwd -P)"
+cache_dir="$TESTER_ROOT/bin/cache"
+snapshot_path="$cache_dir/tester.snapshot"
+version_stamp="$cache_dir/compile.stamp"
+dart_stamp="$cache_dir/dart.stamp"
+current_version="$cache_dir/version"
+package_config="$TESTER_ROOT/.dart_tool/package_config.json"
+temp_dart_ver="$cache_dir/temp_stamp"
+program_entrypoint="package:tester/src/executable.dart"
+dart_exe="dart"
+if [[ -n $FLUTTER_ROOT ]]; then
+  dart_exe="$FLUTTER_ROOT/bin/dart"
+fi
+snapshot_kind="app-jit"
+if [[ -n $TESTER_SNAPSHOT_OVERRIDE ]]; then
+  snapshot_kind="$TESTER_SNAPSHOT_OVERRIDE"
+fi
+
+function generate_snapshot() {
+    mkdir -p "$TESTER_ROOT/bin/cache"
+    local l_current_version="$(cat "$current_version")"
+    local l_current_dart_version="$(dart --disable-dart-dev --version 2>&1)"
+    if [[ ! -f "$snapshot_path" || ! -s "$version_stamp" || ! -s "$dart_stamp" || "$(cat $version_stamp)" != "$l_current_version" || "$(cat "$dart_stamp")" != "$l_current_dart_version" ]]; then
+        echo "precompiling tester snapshot..."
+        "$dart_exe" pub get --no-precompile > /dev/null
+        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind="$snapshot_kind" --packages="$package_config" --no-enable-mirrors "$program_entrypoint" "test/compiler_test.dart" > /dev/null
+        echo "$l_current_dart_version" > "$dart_stamp"
+        echo "$l_current_version" > "$version_stamp"
+    fi
+}
+
+(generate_snapshot)
+
+"$dart_exe" --packages="$package_config" "$snapshot_path" "$@"

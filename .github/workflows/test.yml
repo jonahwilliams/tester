@@ -28,5 +28,8 @@ jobs:
         run: ../../flutter/bin/flutter precache --no-android --no-ios
         working-directory: tester/tester
       - name: test
-        run: ../../flutter/bin/dart lib/src/executable.dart --platform=dart --flutter-root=../../flutter --ci -v
+        run: bin/tester --platform=dart --ci -v
         working-directory: tester/tester
+        env:
+          FLUTTER_ROOT: ../../flutter
+          TESTER_SNAPSHOT_OVERRIDE: kernel
