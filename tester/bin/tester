@@ -42,6 +42,10 @@ dart_exe="dart"
 if [[ -n $FLUTTER_ROOT ]]; then
   dart_exe="$FLUTTER_ROOT/bin/dart"
 fi
+snapshot_kind="app-jit"
+if [[ -n $TESTER_SNAPSHOT_OVERRIDE ]]; then
+  snapshot_kind="$TESTER_SNAPSHOT_OVERRIDE"
+fi
 
 function generate_snapshot() {
     mkdir -p "$TESTER_ROOT/bin/cache"
@@ -50,7 +54,7 @@ function generate_snapshot() {
     if [[ ! -f "$snapshot_path" || ! -s "$version_stamp" || ! -s "$dart_stamp" || "$(cat $version_stamp)" != "$l_current_version" || "$(cat "$dart_stamp")" != "$l_current_dart_version" ]]; then
         echo "precompiling tester snapshot..."
         "$dart_exe" pub get --no-precompile > /dev/null
-        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind=app-jit --packages="$package_config" --no-enable-mirrors "$program_entrypoint" "test/compiler_test.dart" > /dev/null
+        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind="$snapshot_kind" --packages="$package_config" --no-enable-mirrors "$program_entrypoint" "test/compiler_test.dart" > /dev/null
         echo "$l_current_dart_version" > "$dart_stamp"
         echo "$l_current_version" > "$version_stamp"
     fi

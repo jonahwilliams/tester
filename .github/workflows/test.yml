@@ -32,3 +32,4 @@ jobs:
         working-directory: tester/tester
         env:
           FLUTTER_ROOT: ../../flutter
+          TESTER_SNAPSHOT_OVERRIDE: kernel
