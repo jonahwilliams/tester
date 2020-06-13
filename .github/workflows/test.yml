@@ -31,4 +31,4 @@ jobs:
         run: bin/tester --platform=dart --flutter-root=../../flutter --ci -v
         working-directory: tester/tester
         env:
-          PATH: ../../flutter/bin
+          PATH: ../../flutter/bin:$PATH
