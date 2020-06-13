@@ -32,4 +32,5 @@ By default, tester runs all tests and then exits. It can also be configured with
 
 ### Coverage
 
-Code coverage can be measured by passing --coverage (batch-mode only for now). This requires a `lcov` executable to be installed. On windows, this can be done by done fairly easily by downloading Perl and the lcov source (lcov is a giant Perl script).
+Code coverage can be measured by passing --coverage (batch-mode only for now). This
+is currently only supported on dart and flutter platforms, and not web or flutter_web.
