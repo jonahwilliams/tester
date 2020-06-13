@@ -1,11 +1,11 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:meta/meta.dart';
 import 'package:dart_console/dart_console.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -16,9 +16,9 @@ import 'package:path/path.dart' as path;
 /// A class that outputs test results for humans or machines to interpret.
 abstract class TestWriter {
   factory TestWriter({
-    @required String projectRoot,
-    @required bool verbose,
-    @required bool ci,
+    required String projectRoot,
+    required bool verbose,
+    required bool ci,
   }) {
     if (ci) {
       return CiTestWriter();
@@ -86,8 +86,8 @@ class CiTestWriter implements TestWriter {
 /// A [TestWriter] that outputs to a terminal.
 class TerminalTestWriter implements TestWriter {
   TerminalTestWriter({
-    @required this.projectRoot,
-    @required this.verbose,
+    required this.projectRoot,
+    required this.verbose,
   });
 
   final bool verbose;
@@ -136,7 +136,7 @@ class TerminalTestWriter implements TestWriter {
       ..write(testInfo.name)
       ..write('\n\n');
     if (testInfo.description != null) {
-      console.write(_indent(testInfo.description, 2));
+      console.write(_indent(testInfo.description!, 2));
     }
     console
       ..writeLine()
@@ -144,7 +144,7 @@ class TerminalTestWriter implements TestWriter {
       ..writeLine();
 
     var trace = Trace.parse(testResult.stackTrace);
-    var testFrame = trace.frames.firstWhere(
+    var testFrame = trace.frames.firstWhereOrNull(
       (Frame frame) {
         if (frame.uri == testInfo.testFileUri) {
           return true;
@@ -159,9 +159,7 @@ class TerminalTestWriter implements TestWriter {
           return true;
         }
         return false;
-      },
-      orElse: () => null,
-    );
+      });
 
     if (testFrame != null) {
       var testFile = File(testInfo.testFileUri.toFilePath());
@@ -260,5 +258,14 @@ class TerminalTestWriter implements TestWriter {
         .split('\n')
         .map((String line) => ' ' * count + line)
         .join('\n');
+  }
+}
+
+extension<E> on Iterable<E> {
+  E? firstWhereOrNull(bool Function(E) test) {
+    for (var element in this) {
+      if (test(element)) return element;
+    }
+    return null;
   }
 }

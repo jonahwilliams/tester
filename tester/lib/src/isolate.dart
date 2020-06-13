@@ -1,12 +1,12 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
@@ -34,12 +34,13 @@ abstract class TestIsolate {
 /// The isolate under test and manager of the [TestRunner] lifecycle.
 class VmTestIsolate extends TestIsolate {
   VmTestIsolate({
-    @required TestRunner testRunner,
+    required TestRunner testRunner,
   }) : _testRunner = testRunner;
 
   final TestRunner _testRunner;
-  IsolateRef _testIsolateRef;
-  VmService _vmService;
+  IsolateRef? _testIsolateRef;
+  late VmService _vmService;
+  bool _runningService = false;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
@@ -47,44 +48,47 @@ class VmTestIsolate extends TestIsolate {
     var websocketUrl =
         launchResult.serviceUri.replace(scheme: 'ws').toString() + 'ws';
     _vmService = await vmServiceConnectUri(websocketUrl);
+    _runningService = true;
 
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.firstWhere(
         (element) => element.name.contains(launchResult.isolateName));
-    var isolate = await _vmService.getIsolate(_testIsolateRef.id);
+    var isolate = await vmService.getIsolate(_testIsolateRef!.id);
     if (isolate.pauseEvent == null ||
         isolate.pauseEvent.kind != EventKind.kResume) {
-      await _vmService.resume(isolate.id);
+      await vmService.resume(isolate.id);
     }
 
     await Future.wait([
-      _vmService.streamListen(EventStreams.kStdout),
-      _vmService.streamListen(EventStreams.kLogging),
-      _vmService.streamListen(EventStreams.kStderr),
+      vmService.streamListen(EventStreams.kStdout),
+      vmService.streamListen(EventStreams.kLogging),
+      vmService.streamListen(EventStreams.kStderr),
     ]);
     void decodeMessage(Event event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
     }
 
-    _vmService.onStdoutEvent.listen(decodeMessage);
-    _vmService.onStderrEvent.listen(decodeMessage);
-    _vmService.onLoggingEvent.listen(decodeMessage);
+    vmService.onStdoutEvent.listen(decodeMessage);
+    vmService.onStderrEvent.listen(decodeMessage);
+    vmService.onLoggingEvent.listen(decodeMessage);
   }
 
   @override
   FutureOr<void> dispose() {
-    _vmService?.dispose();
-    return _testRunner?.dispose();
+    if (_runningService) {
+      _vmService.dispose();
+    }
+    return _testRunner.dispose();
   }
 
   @override
   Future<TestResult> runTest(TestInfo testInfo) async {
-    Map<String, Object> result;
+    Map<String, dynamic> result;
     try {
-      result = (await _vmService.callServiceExtension(
+      result = (await vmService.callServiceExtension(
         'ext.callTest',
-        isolateId: _testIsolateRef.id,
+        isolateId: _testIsolateRef!.id,
         args: <String, String>{
           'test': testInfo.name,
           'library': testInfo.testFileUri.toString(),
@@ -110,8 +114,8 @@ class VmTestIsolate extends TestIsolate {
 
   @override
   Future<void> reload(Uri incrementalDill) async {
-    await _vmService.reloadSources(
-      _testIsolateRef.id,
+    await vmService.reloadSources(
+      _testIsolateRef!.id,
       rootLibUri: incrementalDill.toString(),
     );
   }
@@ -122,12 +126,11 @@ class VmTestIsolate extends TestIsolate {
 
 class WebTestIsolate extends TestIsolate {
   WebTestIsolate({
-    @required this.testRunner,
+    required this.testRunner,
   });
 
   final ChromeTestRunner testRunner;
-  VmService _vmService;
-  StreamSubscription<void> _logSubscription;
+  late VmService _vmService;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
@@ -155,7 +158,6 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   FutureOr<void> dispose() async {
-    await _logSubscription?.cancel();
     await testRunner.dispose();
   }
 
@@ -212,12 +214,12 @@ class WebTestIsolate extends TestIsolate {
 /// The result of a test execution.
 class TestResult {
   const TestResult({
-    @required this.testFileUri,
-    @required this.testName,
-    @required this.passed,
-    @required this.timeout,
-    @required this.errorMessage,
-    @required this.stackTrace,
+    required this.testFileUri,
+    required this.testName,
+    required this.passed,
+    required this.timeout,
+    required this.errorMessage,
+    required this.stackTrace,
   });
 
   /// Create a [TestResult] from the raw JSON [message].

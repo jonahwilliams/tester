@@ -1,11 +1,11 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'package:coverage/coverage.dart';
 import 'package:file/file.dart';
 import 'package:file/local.dart';
-import 'package:meta/meta.dart';
 import 'package:process/process.dart';
 import 'package:vm_service/vm_service.dart';
 
@@ -18,14 +18,14 @@ class CoverageService {
 
   final FileSystem fileSystem;
   final ProcessManager processManager;
-  Map<String, Map<int, int>> _globalHitmap;
+  Map<String, Map<int, int>>? _globalHitmap;
 
   /// Output the collected coverage data into [coveragePath].
   ///
   /// This will flush all cached coverage data.
   Future<bool> writeCoverageData(
     String coveragePath, {
-    @required String packagesPath,
+    required String packagesPath,
   }) async {
     var coverageData = await _finalizeCoverage(
       packagesPath: packagesPath,
@@ -93,8 +93,8 @@ class CoverageService {
   ///
   /// This will not start any collection tasks. It us up to the caller of to
   /// call [collectCoverage] for each process first.
-  Future<String> _finalizeCoverage({
-    @required String packagesPath,
+  Future<String?> _finalizeCoverage({
+    required String packagesPath,
   }) async {
     if (_globalHitmap == null) {
       return null;
@@ -116,7 +116,7 @@ class CoverageService {
     var vm = await service.getVM();
     var coverage = <Map<String, dynamic>>[];
     for (var isolateRef in vm.isolates) {
-      Map<String, Object> scriptList;
+      Map<String, dynamic> scriptList;
       try {
         var actualScriptList = await service.getScripts(isolateRef.id);
         scriptList = actualScriptList.json;
@@ -164,10 +164,10 @@ class CoverageService {
   ) {
     var hitMaps = <String, Map<int, int>>{};
     for (var scriptId in scripts.keys) {
-      var sourceReport = sourceReports[scriptId];
+      var sourceReport = sourceReports[scriptId]!;
       for (var range in (sourceReport['ranges'] as List<dynamic>)
           .cast<Map<String, dynamic>>()) {
-        var coverage = (range['coverage'] as Map).cast<String, Object>();
+        var coverage = (range['coverage'] as Map?)?.cast<String, Object>();
         // Coverage reports may sometimes be null for a Script.
         if (coverage == null) {
           continue;
@@ -177,11 +177,11 @@ class CoverageService {
         var uri = scriptRef['uri'] as String;
 
         hitMaps[uri] ??= <int, int>{};
-        var hitMap = hitMaps[uri];
-        var hits = (coverage['hits'] as List<dynamic>).cast<int>();
-        var misses = (coverage['misses'] as List<dynamic>).cast<int>();
-        var tokenPositions =
-            scripts[scriptRef['id']]['tokenPosTable'] as List<dynamic>;
+        var hitMap = hitMaps[uri]!;
+        var hits = (coverage['hits'] as List<dynamic>?)?.cast<int>();
+        var misses = (coverage['misses'] as List<dynamic>?)?.cast<int>();
+        var tokenPositions = (scripts[scriptRef['id'] as dynamic]
+            as dynamic)['tokenPosTable'] as List<dynamic>?;
         // The token positions can be null if the script has no coverable lines.
         if (tokenPositions == null) {
           continue;

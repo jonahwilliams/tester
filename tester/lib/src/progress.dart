@@ -1,14 +1,14 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 import 'package:dart_console/dart_console.dart';
 
 abstract class Progress {
-  factory Progress({@required bool ci}) {
+  factory Progress({required bool ci}) {
     if (ci) {
       return CiProgress();
     }
@@ -31,8 +31,8 @@ class CiProgress implements Progress {
 }
 
 class StdoutProgress implements Progress {
-  Timer timer;
-  String message;
+  Timer? timer;
+  String? message;
   final Console console = Console();
   static const kProgressChars = <String>[
     '⣾',
@@ -59,10 +59,11 @@ class StdoutProgress implements Progress {
 
   @override
   void stop() {
-    if (timer == null || !timer.isActive) {
+    var localTimer = timer;
+    if (localTimer == null || !localTimer.isActive) {
       throw StateError('stop called while timer was already stopped');
     }
-    timer.cancel();
+    localTimer.cancel();
     timer = null;
     console.showCursor();
   }

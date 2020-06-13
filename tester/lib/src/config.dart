@@ -1,20 +1,20 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'package:file/file.dart';
 import 'package:file/local.dart';
-import 'package:meta/meta.dart';
 
 /// Configuration necessary to bootstrap the test runner.
 class Config {
   factory Config({
-    @required String flutterRoot,
-    @required TargetPlatform targetPlatform,
-    @required String workspacePath,
-    @required String packageRootPath,
-    @required List<Uri> tests,
-    @required String cacheName,
+    required String flutterRoot,
+    required TargetPlatform targetPlatform,
+    required String workspacePath,
+    required String packageRootPath,
+    required List<Uri> tests,
+    required String cacheName,
     FileSystem fileSystem = const LocalFileSystem(),
   }) {
     return Config._(
@@ -95,24 +95,24 @@ class Config {
   }
 
   const Config._({
-    @required this.dartPath,
-    @required this.frontendServerPath,
-    @required this.workspacePath,
-    @required this.packageRootPath,
-    @required this.tests,
-    @required this.dartSdkRoot,
-    @required this.platformDillUri,
-    @required this.flutterPatchedSdkRoot,
-    @required this.targetPlatform,
-    @required this.flutterTesterPath,
-    @required this.flutterWebPlatformDillUri,
-    @required this.flutterWebDartSdk,
-    @required this.flutterWebDartSdkSourcemaps,
-    @required this.webDartSdk,
-    @required this.webDartSdkSourcemaps,
-    @required this.stackTraceMapper,
-    @required this.requireJS,
-    @required this.dartWebPlatformDillUri,
+    required this.dartPath,
+    required this.frontendServerPath,
+    required this.workspacePath,
+    required this.packageRootPath,
+    required this.tests,
+    required this.dartSdkRoot,
+    required this.platformDillUri,
+    required this.flutterPatchedSdkRoot,
+    required this.targetPlatform,
+    required this.flutterTesterPath,
+    required this.flutterWebPlatformDillUri,
+    required this.flutterWebDartSdk,
+    required this.flutterWebDartSdkSourcemaps,
+    required this.webDartSdk,
+    required this.webDartSdkSourcemaps,
+    required this.stackTraceMapper,
+    required this.requireJS,
+    required this.dartWebPlatformDillUri,
   });
 
   /// The file path to the dart executable.

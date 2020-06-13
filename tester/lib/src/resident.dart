@@ -1,12 +1,12 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:async';
 import 'dart:io';
 
 import 'package:dart_console/dart_console.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:stream_transform/stream_transform.dart';
 import 'package:watcher/watcher.dart';
@@ -23,10 +23,10 @@ import 'writer.dart';
 /// rerunning.
 class Resident {
   Resident({
-    @required this.compiler,
-    @required this.config,
-    @required this.testIsolate,
-    @required this.writer,
+    required this.compiler,
+    required this.config,
+    required this.testIsolate,
+    required this.writer,
   });
 
   final ProjectFileInvalidator projectFileInvalidator =
@@ -37,7 +37,7 @@ class Resident {
   final TestIsolate testIsolate;
   final TestWriter writer;
   final infoProvider = TestInformationProvider();
-  Map<Uri, List<TestInfo>> testInformation;
+  late Map<Uri, List<TestInfo>> testInformation;
 
   Future<void> start() async {
     testInformation = <Uri, List<TestInfo>>{};
@@ -81,7 +81,7 @@ class Resident {
         pendingTest = true;
         writer.writeHeader();
         for (var testFileUri in testInformation.keys) {
-          for (var testInfo in testInformation[testFileUri]) {
+          for (var testInfo in testInformation[testFileUri] ?? <TestInfo>[]) {
             var testResult = await testIsolate.runTest(testInfo);
             writer.writeTest(testResult, testInfo);
           }
@@ -119,7 +119,7 @@ class Resident {
         testInformation[testUri] = infoProvider.collectTestInfo(testUri);
         await testIsolate.reload(result);
       }
-      var testInfos = testInformation[testUri];
+      var testInfos = testInformation[testUri] ?? <TestInfo>[];
       writer.writeHeader();
       for (var testInfo in testInfos) {
         var testResult = await testIsolate.runTest(testInfo);

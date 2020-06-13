@@ -1,6 +1,7 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:async';
 import 'dart:convert';
@@ -8,7 +9,6 @@ import 'dart:io';
 
 import 'package:file/file.dart';
 import 'package:file/local.dart';
-import 'package:meta/meta.dart';
 import 'package:process/process.dart';
 import 'package:tester/src/platform.dart';
 import 'package:uuid/uuid.dart';
@@ -121,9 +121,9 @@ Future<void> main() async {
 /// The frontend_server communicates to this tool over stdin and stdout.
 class Compiler {
   Compiler({
-    @required this.config,
-    @required this.compilerMode,
-    @required this.timeout,
+    required this.config,
+    required this.compilerMode,
+    required this.timeout,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
@@ -136,18 +136,20 @@ class Compiler {
   final Platform platform;
   final int timeout;
 
-  List<Uri> _dependencies;
-  DateTime _lastCompiledTime;
-  StdoutHandler _stdoutHandler;
-  Process _frontendServer;
-  File _mainFile;
+  late List<Uri> _dependencies;
+  late DateTime _lastCompiledTime;
+  late StdoutHandler _stdoutHandler;
+  late Process _frontendServer;
+  late File _mainFile;
 
   DateTime get lastCompiled => _lastCompiledTime;
 
   List<Uri> get dependencies => _dependencies;
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
-  Future<Uri> start(Map<Uri, List<TestInfo>> testInformation) async {
+  ///
+  /// Returns `null` if the compilation fails.
+  Future<Uri?> start(Map<Uri, List<TestInfo>> testInformation) async {
     var workspace = fileSystem.directory(config.workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
@@ -203,7 +205,10 @@ class Compiler {
     return dillOutput.uri;
   }
 
-  Future<Uri> recompile(
+  /// Recompile the application with [invalidated] libraries.
+  ///
+  /// Returns `null` if the compilation fails.
+  Future<Uri?> recompile(
     List<Uri> invalidated,
     Map<Uri, List<TestInfo>> testInformation,
   ) async {
@@ -270,7 +275,6 @@ class Compiler {
           '--track-widget-creation',
         ];
     }
-    throw StateError('_compilerMode was null');
   }
 
   void _regenerateMain(Map<Uri, List<TestInfo>> testInformation, int timeout) {
@@ -301,7 +305,7 @@ class Compiler {
     contents.writeln('var testRegistry = {');
     for (var testFileUri in testInformation.keys) {
       contents.writeln('"${testFileUri}": {');
-      for (var testInfo in testInformation[testFileUri]) {
+      for (var testInfo in testInformation[testFileUri] ?? <TestInfo>[]) {
         contents.writeln('"${testInfo.name}": ${testInfo.name},');
       }
       contents.writeln('},');
@@ -327,12 +331,12 @@ class StdoutHandler {
 
   bool compilerMessageReceived = false;
   final void Function(String) consumer;
-  String boundaryKey;
+  String? boundaryKey;
   StdoutState state = StdoutState.CollectDiagnostic;
-  Completer<CompilerOutput> compilerOutput;
+  late Completer<CompilerOutput> compilerOutput;
   final List<Uri> sources = <Uri>[];
 
-  bool _suppressCompilerMessages;
+  bool _suppressCompilerMessages = false;
   bool _expectSources = true;
 
   void handler(String message) {
@@ -341,20 +345,20 @@ class StdoutHandler {
       boundaryKey = message.substring(kResultPrefix.length);
       return;
     }
-    if (message.startsWith(boundaryKey)) {
+    if (message.startsWith(boundaryKey!)) {
       if (_expectSources) {
         if (state == StdoutState.CollectDiagnostic) {
           state = StdoutState.CollectDependencies;
           return;
         }
       }
-      if (message.length <= boundaryKey.length) {
+      if (message.length <= boundaryKey!.length) {
         compilerOutput.complete(null);
         return;
       }
       var spaceDelimiter = message.lastIndexOf(' ');
       compilerOutput.complete(CompilerOutput(
-          message.substring(boundaryKey.length + 1, spaceDelimiter),
+          message.substring(boundaryKey!.length + 1, spaceDelimiter),
           int.parse(message.substring(spaceDelimiter + 1).trim()),
           sources));
       return;
@@ -418,9 +422,9 @@ class ProjectFileInvalidator {
   static const _pubCachePathLinuxAndMac = '.pub-cache';
 
   Future<List<Uri>> findInvalidated({
-    @required DateTime lastCompiled,
-    @required List<Uri> urisToMonitor,
-    @required Uri packagesUri,
+    required DateTime? lastCompiled,
+    required List<Uri> urisToMonitor,
+    required Uri packagesUri,
   }) async {
     if (lastCompiled == null) {
       assert(urisToMonitor.isEmpty);
@@ -440,7 +444,7 @@ class ProjectFileInvalidator {
           .file(uri.toFilePath(windows: platform.isWindows))
           .statSync()
           .modified;
-      if (updatedAt != null && updatedAt.isAfter(lastCompiled)) {
+      if (updatedAt.isAfter(lastCompiled)) {
         invalidatedFiles.add(uri);
       }
     }

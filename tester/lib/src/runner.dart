@@ -1,12 +1,12 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
-import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 
 /// The test runner manages the lifecycle of the platform under test.
@@ -43,8 +43,8 @@ Future<String> _pollForServiceFile(File file) async {
 /// The result of starting a [TestRunner].
 class RunnerStartResult {
   const RunnerStartResult({
-    @required this.serviceUri,
-    @required this.isolateName,
+    required this.serviceUri,
+    required this.isolateName,
   });
 
   /// The URI of the VM Service to connect to.
@@ -58,12 +58,12 @@ class RunnerStartResult {
 class VmTestRunner implements TestRunner {
   /// Create a new [VmTestRunner].
   VmTestRunner({
-    @required this.dartExecutable,
+    required this.dartExecutable,
   });
 
   final String dartExecutable;
 
-  Process _process;
+  Process? _process;
   var _disposed = false;
 
   @override
@@ -86,7 +86,7 @@ class VmTestRunner implements TestRunner {
       '--write-service-info=${uniqueFile.path}',
       entrypoint.toString(),
     ]);
-    unawaited(_process.exitCode.whenComplete(() {
+    unawaited(_process!.exitCode.whenComplete(() {
       if (!_disposed) {
         onExit();
       }
@@ -109,7 +109,7 @@ class VmTestRunner implements TestRunner {
       throw StateError('VmTestRunner has already been disposed');
     }
     _disposed = true;
-    _process.kill();
+    _process!.kill();
   }
 }
 
@@ -117,7 +117,7 @@ class VmTestRunner implements TestRunner {
 class FlutterTestRunner extends TestRunner {
   /// Create a new [FlutterTestRunner].
   FlutterTestRunner({
-    @required this.flutterTesterPath,
+    required this.flutterTesterPath,
   });
 
   final String flutterTesterPath;
@@ -125,7 +125,7 @@ class FlutterTestRunner extends TestRunner {
   static final _serviceRegex = RegExp(RegExp.escape('Observatory') +
       r' listening on ((http|//)[a-zA-Z0-9:/=_\-\.\[\]]+)');
 
-  Process _process;
+  Process? _process;
   bool _disposed = false;
 
   @override
@@ -146,14 +146,14 @@ class FlutterTestRunner extends TestRunner {
       '--use-test-fonts',
       entrypoint.toFilePath(),
     ]);
-    unawaited(_process.exitCode.whenComplete(() {
+    unawaited(_process!.exitCode.whenComplete(() {
       if (!_disposed) {
         onExit();
       }
     }));
     var serviceInfo = Completer<Uri>();
-    StreamSubscription subscription;
-    subscription = _process.stdout
+    late StreamSubscription subscription;
+    subscription = _process!.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen((String line) {
@@ -161,12 +161,14 @@ class FlutterTestRunner extends TestRunner {
       if (match == null) {
         return;
       }
-      serviceInfo.complete(Uri.parse(match[1]));
+      serviceInfo.complete(Uri.parse(match[1] ?? ''));
       subscription.cancel();
     });
 
     return RunnerStartResult(
-        isolateName: '', serviceUri: await serviceInfo.future);
+      isolateName: '',
+      serviceUri: await serviceInfo.future,
+    );
   }
 
   @override
@@ -178,6 +180,6 @@ class FlutterTestRunner extends TestRunner {
       throw StateError('VmTestRunner has already been disposed');
     }
     _disposed = true;
-    _process.kill();
+    _process!.kill();
   }
 }

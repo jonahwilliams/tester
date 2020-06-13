@@ -1,6 +1,7 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:convert';
 import 'dart:async';
@@ -10,7 +11,6 @@ import 'dart:typed_data';
 import 'package:shelf/shelf_io.dart' as shelf;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:dwds/dwds.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:vm_service/vm_service.dart';
 import 'package:webkit_inspection_protocol/webkit_inspection_protocol.dart';
@@ -21,11 +21,11 @@ import 'runner.dart';
 /// A test runner that spawns chrome and a dwds process.
 class ChromeTestRunner extends TestRunner implements AssetReader {
   ChromeTestRunner({
-    @required this.dartSdkFile,
-    @required this.dartSdkSourcemap,
-    @required this.stackTraceMapper,
-    @required this.requireJS,
-    @required this.config,
+    required this.dartSdkFile,
+    required this.dartSdkSourcemap,
+    required this.stackTraceMapper,
+    required this.requireJS,
+    required this.config,
   });
 
   /// The expected executable name on linux.
@@ -47,11 +47,11 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 </html>
 ''';
 
-  Process _chromeProcess;
-  Dwds _dwds;
-  Directory _chromeTempProfile;
-  HttpServer _httpServer;
-  VmService vmService;
+  late Process _chromeProcess;
+  late Dwds _dwds;
+  late Directory _chromeTempProfile;
+  late HttpServer _httpServer;
+  late VmService vmService;
 
   final Config config;
   final File dartSdkFile;
@@ -106,7 +106,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
     // Return the module name for a given server path. These are the names
     // used by the browser to request JavaScript files.
-    String moduleForServerPath(String serverPath) {
+    String? moduleForServerPath(String serverPath) {
       if (serverPath.endsWith('.lib.js')) {
         serverPath =
             serverPath.startsWith('/') ? serverPath.substring(1) : serverPath;
@@ -123,7 +123,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
     // Return the server path for modules or resources that have an
     // org-dartlang-app scheme.
-    String serverPathForAppUri(String appUri) {
+    String? serverPathForAppUri(String appUri) {
       if (appUri.startsWith('org-dartlang-app:')) {
         return Uri.parse(appUri).path.substring(1);
       }
@@ -220,9 +220,6 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     var manifest =
         json.decode(manifestFile.readAsStringSync()) as Map<String, Object>;
     for (var filePath in manifest.keys) {
-      if (filePath == null) {
-        continue;
-      }
       var offsets = manifest[filePath] as Map<String, Object>;
       var codeOffsets = (offsets['code'] as List<dynamic>).cast<int>();
       var sourcemapOffsets =
@@ -271,19 +268,24 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   }
 
   @override
-  Future<String> dartSourceContents(String serverPath) async {
-    if (!serverPath.endsWith('.dart')) return null;
-    print(serverPath);
+  Future<String?> dartSourceContents(String serverPath) async {
+    if (!serverPath.endsWith('.dart')) {
+      return null;
+    }
     return File(path.join(config.packageRootPath, serverPath))
         .readAsStringSync();
   }
 
   @override
-  Future<String> sourceMapContents(String serverPath) async {
+  Future<String?> sourceMapContents(String serverPath) async {
     if (!serverPath.endsWith('lib.js.map')) return null;
     if (!serverPath.startsWith('/')) serverPath = '/$serverPath';
     // Strip the .map, sources are looked up by their js path.
-    return utf8.decode(sourcemaps[path.withoutExtension(serverPath)]);
+    var buffer = sourcemaps[path.withoutExtension(serverPath)];
+    if (buffer == null) {
+      return null;
+    }
+    return utf8.decode(buffer);
   }
 
   Future<shelf.Response> _handleRequest(shelf.Request request) async {
@@ -301,7 +303,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     }
 
     if (files.containsKey(requestPath)) {
-      final List<int> bytes = files[requestPath];
+      final List<int> bytes = files[requestPath]!;
       headers[HttpHeaders.contentLengthHeader] = bytes.length.toString();
       headers[HttpHeaders.contentTypeHeader] = 'application/javascript';
       return shelf.Response.ok(bytes, headers: headers);
@@ -321,12 +323,12 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     }
     if (Platform.isWindows) {
       /// The possible locations where the chrome executable can be located on windows.
-      var kWindowsPrefixes = <String>[
+      var kWindowsPrefixes = <String?>[
         Platform.environment['LOCALAPPDATA'],
         Platform.environment['PROGRAMFILES'],
         Platform.environment['PROGRAMFILES(X86)'],
       ];
-      var windowsPrefix = kWindowsPrefixes.firstWhere((String prefix) {
+      var windowsPrefix = kWindowsPrefixes.firstWhere((String? prefix) {
         if (prefix == null) {
           return false;
         }
@@ -335,8 +337,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       }, orElse: () => '.');
       return path.join(windowsPrefix, kWindowsExecutable);
     }
-    assert(false);
-    return null;
+    throw StateError('unreachable');
   }
 
   /// Returns the full URL of the Chrome remote debugger for the main page.
@@ -351,7 +352,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       var response = await request.close();
       var jsonObject =
           await json.fuse(utf8).decoder.bind(response).single as List<dynamic>;
-      if (jsonObject == null || jsonObject.isEmpty) {
+      if (jsonObject.isEmpty) {
         return base;
       }
       return base.resolve(jsonObject.first['devtoolsFrontendUrl'] as String);
@@ -365,7 +366,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
 Future<int> findFreePort({bool ipv6 = false}) async {
   var port = 0;
-  ServerSocket serverSocket;
+  ServerSocket? serverSocket;
   var loopback =
       ipv6 ? InternetAddress.loopbackIPv6 : InternetAddress.loopbackIPv4;
   try {
@@ -392,8 +393,8 @@ Future<int> findFreePort({bool ipv6 = false}) async {
 /// loads the special Dart stack trace mapper. The [entrypoint] is the
 /// actual main.dart file.
 String generateBootstrapScript({
-  @required String requireUrl,
-  @required String mapperUrl,
+  required String requireUrl,
+  required String mapperUrl,
 }) {
   return '''
 "use strict";
@@ -416,7 +417,7 @@ document.head.appendChild(requireEl);
 
 /// Generate a synthetic main module which captures the application's main
 /// method.
-String generateMainModule({@required String entrypoint}) {
+String generateMainModule({required String entrypoint}) {
   return '''/* ENTRYPOINT_EXTENTION_MARKER */
 // Create the main module loaded below.
 define("main_module.bootstrap", ["$entrypoint", "dart_sdk"], function(app, dart_sdk) {

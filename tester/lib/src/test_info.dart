@@ -1,6 +1,7 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:io';
 import 'dart:typed_data';
@@ -32,14 +33,14 @@ class TestInformationProvider {
 
 class TestInfo {
   const TestInfo({
-    this.name,
-    this.description,
-    this.testFileUri,
-    this.testToken,
+    required this.name,
+    required this.description,
+    required this.testFileUri,
+    required this.testToken,
   });
 
   final String name;
-  final String description;
+  final String? description;
   final Uri testFileUri;
   final Token testToken;
 }
@@ -74,7 +75,7 @@ class TestNameCollector extends Listener {
     // is present.
     var description = StringBuffer();
     var comment = beginToken.precedingComments;
-    while (comment != null) {
+    while (comment != null) { // ignore: unnecessary_null_comparison
       var content = comment.toString();
       if (content.startsWith('///')) {
         description.writeln(content.substring(3).trim());

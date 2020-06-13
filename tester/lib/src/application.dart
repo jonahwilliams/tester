@@ -1,11 +1,11 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.9
 
 import 'dart:io';
 
 import 'package:file/local.dart';
-import 'package:meta/meta.dart';
 
 import 'coverage.dart';
 import 'test_info.dart';
@@ -18,13 +18,13 @@ import 'web_runner.dart';
 import 'writer.dart';
 
 void runApplication({
-  @required bool verbose,
-  @required bool batchMode,
-  @required bool ci,
-  @required Config config,
-  @required String coverageOutputPath,
-  @required String appName,
-  @required int timeout,
+  required bool verbose,
+  required bool batchMode,
+  required bool ci,
+  required Config config,
+  required String? coverageOutputPath,
+  required String appName,
+  required int timeout,
 }) async {
   var coverage = CoverageService();
   var compiler = Compiler(
@@ -96,7 +96,7 @@ void runApplication({
   if (batchMode) {
     writer.writeHeader();
     for (var testFileUri in testInformation.keys) {
-      for (var testInfo in testInformation[testFileUri]) {
+      for (var testInfo in testInformation[testFileUri] ?? <TestInfo>[]) {
         var testResult = await testIsolate.runTest(testInfo);
         writer.writeTest(testResult, testInfo);
       }

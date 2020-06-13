@@ -1,6 +1,7 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+// @dart = 2.8
 
 // Taken from https://github.com/flutter/flutter/blob/master/packages/flutter_tools/test/src/fake_process_manager.dart
 
@@ -16,7 +17,7 @@ import 'package:test_shim/test_shim.dart';
 @immutable
 class FakeCommand {
   const FakeCommand({
-    @required this.command,
+    this.command,
     this.workingDirectory,
     this.environment,
     this.duration = const Duration(),
@@ -26,9 +27,7 @@ class FakeCommand {
     this.stderr = '',
     this.completer,
     this.stdin,
-  })  : assert(command != null),
-        assert(duration != null),
-        assert(exitCode != null);
+  });
 
   /// The exact commands that must be matched for this [FakeCommand] to be
   /// considered correct.
