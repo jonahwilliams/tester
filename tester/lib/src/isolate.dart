@@ -57,16 +57,19 @@ class VmTestIsolate extends TestIsolate {
       await _vmService.resume(isolate.id);
     }
 
-    await _vmService.streamListen(EventStreams.kStdout);
-    _vmService.onStdoutEvent.listen((event) {
+    await Future.wait([
+      _vmService.streamListen(EventStreams.kStdout),
+      _vmService.streamListen(EventStreams.kLogging),
+      _vmService.streamListen(EventStreams.kStderr),
+    ]);
+    void decodeMessage(Event event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
-    });
-    await _vmService.streamListen(EventStreams.kLogging);
-    _vmService.onStdoutEvent.listen((event) {
-      var message = utf8.decode(base64.decode(event.bytes));
-      print(message);
-    });
+    }
+
+    _vmService.onStdoutEvent.listen(decodeMessage);
+    _vmService.onStderrEvent.listen(decodeMessage);
+    _vmService.onLoggingEvent.listen(decodeMessage);
   }
 
   @override
@@ -137,16 +140,17 @@ class WebTestIsolate extends TestIsolate {
     await testRunner.start(entrypoint, onExit);
     _vmService = testRunner.vmService;
 
-    await _vmService.streamListen(EventStreams.kStdout);
-    _vmService.onStdoutEvent.listen((event) {
+    await Future.wait([
+      _vmService.streamListen(EventStreams.kStdout),
+      _vmService.streamListen(EventStreams.kStderr),
+    ]);
+    void decodeMessage(Event event) {
       var message = utf8.decode(base64.decode(event.bytes));
       print(message);
-    });
-    await _vmService.streamListen(EventStreams.kLogging);
-    _vmService.onStdoutEvent.listen((event) {
-      var message = utf8.decode(base64.decode(event.bytes));
-      print(message);
-    });
+    }
+
+    _vmService.onStdoutEvent.listen(decodeMessage);
+    _vmService.onStderrEvent.listen(decodeMessage);
   }
 
   @override

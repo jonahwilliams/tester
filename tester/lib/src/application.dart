@@ -24,11 +24,13 @@ void runApplication({
   @required Config config,
   @required String coverageOutputPath,
   @required String appName,
+  @required int timeout,
 }) async {
   var coverage = CoverageService();
   var compiler = Compiler(
     config: config,
     compilerMode: config.targetPlatform,
+    timeout: timeout,
   );
   var infoProvider = TestInformationProvider();
   var testInformation = <Uri, List<TestInfo>>{};
