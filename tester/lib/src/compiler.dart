@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:developer';
 
 import 'package:file/file.dart';
 import 'package:file/local.dart';
@@ -55,10 +56,17 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
 }
 
 Future<void> main() {
+  var zone = Zone.current.fork(
+    specification: ZoneSpecification(
+      print: (self, parent, zone, line) {
+        log(line);
+      },
+    ),
+  );
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
-    final result = await executeTest(test, library);
+    final result = await zone.run(() => executeTest(test, library));
     return ServiceExtensionResponse.result(json.encode(result));
   });
   stdin.listen((_) { });
@@ -112,6 +120,56 @@ Future<void> main() async {
     return ServiceExtensionResponse.result(json.encode(result));
   });
   await ui.webOnlyInitializePlatform();
+}
+
+''';
+
+
+String generateWebTestMain(int timeout) =>
+    '''
+import 'dart:convert';
+import 'dart:async';
+import 'dart:developer';
+
+Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
+  var testFunction = testRegistry[libraryUri][name];
+
+  var passed = false;
+  var timeout = false;
+  dynamic error;
+  dynamic stackTrace;
+  try {
+''' +
+    ((timeout == -1)
+        ? 'await Future(() => testFunction());'
+        : 'await Future(() => testFunction()).timeout(const Duration(seconds: $timeout));') +
+    '''
+    await Future(() => testFunction());
+    passed = true;
+  } catch (err, st) {
+    error = err;
+    stackTrace = st;
+    if (err is TimeoutException) {
+      timeout = true;
+    }
+  } finally {
+    return <String, Object>{
+      'test': name,
+      'passed': passed,
+      'timeout': timeout,
+      'error': error?.toString(),
+      'stackTrace': stackTrace?.toString(),
+    };
+  }
+}
+
+Future<void> main() async {
+  registerExtension('ext.callTest', (String request, Map<String, String> args) async {
+    var test = args['test'];
+    var library = args['library'];
+    final result = await executeTest(test, library);
+    return ServiceExtensionResponse.result(json.encode(result));
+  });
 }
 
 ''';
@@ -289,7 +347,7 @@ class Compiler {
         contents.write(generateVmTestMain(timeout));
         break;
       case TargetPlatform.web:
-        contents.write(generateVmTestMain(timeout));
+        contents.write(generateWebTestMain(timeout));
         break;
       case TargetPlatform.flutter:
         contents.write(generateVmTestMain(timeout));

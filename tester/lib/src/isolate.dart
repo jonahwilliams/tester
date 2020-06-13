@@ -28,6 +28,7 @@ abstract class TestIsolate {
   /// Reload the application with the incremental file defined at `incrementalDill`.
   Future<void> reload(Uri incrementalDill);
 
+  /// The active vm service instance for this runner.
   VmService get vmService;
 }
 
@@ -58,17 +59,12 @@ class VmTestIsolate extends TestIsolate {
     }
 
     await Future.wait([
-      _vmService.streamListen(EventStreams.kStdout),
       _vmService.streamListen(EventStreams.kLogging),
-      _vmService.streamListen(EventStreams.kStderr),
     ]);
     void decodeMessage(Event event) {
-      var message = utf8.decode(base64.decode(event.bytes));
-      print(message);
+      print(event.logRecord.message.valueAsString);
     }
 
-    _vmService.onStdoutEvent.listen(decodeMessage);
-    _vmService.onStderrEvent.listen(decodeMessage);
     _vmService.onLoggingEvent.listen(decodeMessage);
   }
 
