@@ -8,22 +8,21 @@ environment:
 
 dependencies:
   yaml: 2.2.1
-  coverage: 0.13.9
+  coverage: 0.14.0
   shelf: 0.7.5
   stream_transform: 1.2.0
   watcher: '0.9.7+15'
   stack_trace: 1.9.3
   dart_console: 0.6.0
-  vm_service: 4.0.4
+  vm_service: 4.1.0
   package_config: 1.9.3
-  uuid: 2.0.4
+  uuid: 2.1.0
   args: 1.6.0
   pedantic: 1.9.0
   path: 1.7.0
-  analyzer: 0.39.8
-  dwds: 3.1.1
-  webkit_inspection_protocol: 0.5.4
-  _fe_analyzer_shared: 3.0.0
+  dwds: 4.0.1
+  webkit_inspection_protocol: 0.7.3
+  _fe_analyzer_shared: 4.0.0
   file: 5.1.0
   process: 3.0.13
 
