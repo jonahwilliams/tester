@@ -70,9 +70,14 @@ class CoverageService {
   Future<void> collectCoverageIsolate(
     VmService service,
     bool Function(String) libraryPredicate,
+    String packagesPath,
   ) async {
     var result = await _getAllCoverage(service, libraryPredicate);
-    _addHitmap(createHitmap(result['coverage'] as List<Map<String, dynamic>>));
+    _addHitmap(await createHitmap(
+      result['coverage'] as List<Map<String, dynamic>>,
+      checkIgnoredLines: true,
+      packagesPath: packagesPath,
+    ));
   }
 
   void _addHitmap(Map<String, Map<int, int>> hitmap) {

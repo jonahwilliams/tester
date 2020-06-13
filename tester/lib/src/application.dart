@@ -103,14 +103,15 @@ void runApplication({
     }
     writer.writeSummary();
     if (coverageOutputPath != null) {
+      var packagesPath = const LocalFileSystem()
+          .path
+          .join(config.packageRootPath, '.dart_tool', 'package_config.json');
       print('Collecting coverage data...');
       await coverage.collectCoverageIsolate(testIsolate.vmService,
-          (String libraryName) => libraryName.contains(appName));
+          (String libraryName) => libraryName.contains(appName), packagesPath);
       await coverage.writeCoverageData(
         coverageOutputPath,
-        packagesPath: const LocalFileSystem()
-            .path
-            .join(config.packageRootPath, '.packages'),
+        packagesPath: packagesPath,
       );
     }
     testIsolate.dispose();
