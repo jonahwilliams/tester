@@ -7,9 +7,10 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:tester/src/config.dart';
-import 'package:tester/tester.dart';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
+
+import 'application.dart';
 
 const _allowedPlatforms = ['dart', 'web', 'flutter', 'flutter_web'];
 

@@ -7,15 +7,15 @@ import 'dart:io';
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
 
-import 'src/coverage.dart';
-import 'src/test_info.dart';
-import 'src/compiler.dart';
-import 'src/config.dart';
-import 'src/isolate.dart';
-import 'src/resident.dart';
-import 'src/runner.dart';
-import 'src/web_runner.dart';
-import 'src/writer.dart';
+import 'coverage.dart';
+import 'test_info.dart';
+import 'compiler.dart';
+import 'config.dart';
+import 'isolate.dart';
+import 'resident.dart';
+import 'runner.dart';
+import 'web_runner.dart';
+import 'writer.dart';
 
 void runApplication({
   @required bool verbose,
