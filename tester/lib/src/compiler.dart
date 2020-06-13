@@ -124,7 +124,6 @@ Future<void> main() async {
 
 ''';
 
-
 String generateWebTestMain(int timeout) =>
     '''
 import 'dart:convert';
