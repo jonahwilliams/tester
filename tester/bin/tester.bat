@@ -20,6 +20,7 @@ SET program_entrypoint="package:tester/src/executable.dart"
     IF NOT EXIST "%cache_dir%" MKDIR "%cache_dir%"
     IF NOT EXIST "%version_stamp%" GOTO snapshot
     IF NOT EXIST "%dart_stamp%" GOTO snapshot
+    IF NOT EXIST "%snapshot_path%" GOTO snapshot
 
     SET /P current_version=<"%current_version%"
     SET /P installed_version=<"%version_stamp%"

@@ -4,6 +4,7 @@
 
 // Taken from https://github.com/flutter/flutter/blob/master/packages/flutter_tools/lib/src/base/platform.dart
 
+// @dart=2.8
 import 'dart:io' as io show Platform, stdin, stdout;
 
 /// Provides API parity with the `Platform` class in `dart:io`, but using
