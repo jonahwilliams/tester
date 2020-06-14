@@ -114,11 +114,12 @@ void runApplication({
       currentTarget %= concurrency;
     }
 
-    for (var testFileUri in testInformation.keys) {
-      for (var testInfo in testInformation[testFileUri]) {
-        addAndSwitch(testInfo);
-      }
-    }
+    <TestInfo>[
+      for (var testFileUri in testInformation.keys)
+        for (var testInfo in testInformation[testFileUri]) testInfo
+    ]
+      ..shuffle()
+      ..forEach(addAndSwitch);
 
     await Future.wait(<Future<void>>[
       for (var i = 0; i < concurrency; i++)
