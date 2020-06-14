@@ -38,6 +38,14 @@ final argParser = ArgParser()
     defaultsTo: 'dart',
   )
   ..addOption(
+    'concurrency',
+    abbr: 'j',
+    help: 'The number of test isolates to run concurrently in batch mode. '
+        'This option only takes effect in batch mode without code coverage. '
+        'If not provided, defaults to 1',
+    defaultsTo: '1',
+  )
+  ..addOption(
     'timeout',
     help: 'The maximum number of seconds a single test can elapse before it is '
         'consider a failure. To disable timeouts, pass -1 as a value.',
@@ -123,13 +131,15 @@ Future<void> main(List<String> args) async {
     flutterRoot: flutterRoot,
   );
   runApplication(
-      verbose: argResults['verbose'] as bool,
-      batchMode: !(argResults['watch'] as bool),
-      config: config,
-      ci: argResults['ci'] as bool,
-      appName: appName,
-      coverageOutputPath: (argResults['coverage'] as bool)
-          ? argResults['coverage-output'] as String
-          : null,
-      timeout: int.tryParse(argResults['timeout'] as String) ?? 15);
+    verbose: argResults['verbose'] as bool,
+    batchMode: !(argResults['watch'] as bool),
+    config: config,
+    ci: argResults['ci'] as bool,
+    appName: appName,
+    coverageOutputPath: (argResults['coverage'] as bool)
+        ? argResults['coverage-output'] as String
+        : null,
+    timeout: int.tryParse(argResults['timeout'] as String) ?? 15,
+    concurrency: int.tryParse(argResults['concurrency'] as String),
+  );
 }

@@ -25,7 +25,11 @@ void runApplication({
   @required String coverageOutputPath,
   @required String appName,
   @required int timeout,
+  @required int concurrency,
 }) async {
+  if (!batchMode || coverageOutputPath != null) {
+    concurrency = 1;
+  }
   var coverage = CoverageService();
   var compiler = Compiler(
     config: config,
@@ -43,85 +47,114 @@ void runApplication({
     return;
   }
 
-  // Step 3. Load test isolate.
-  TestIsolate testIsolate;
+  var testIsolates = <TestIsolate>[];
+  var loadingIsolates = <Future<void>>[];
+  for (var i = 0; i < concurrency; i++) {
+    TestIsolate testIsolate;
+    switch (config.targetPlatform) {
+      case TargetPlatform.dart:
+        var testRunner = VmTestRunner(
+          dartExecutable: config.dartPath,
+        );
+        testIsolate = VmTestIsolate(testRunner: testRunner);
+        break;
+      case TargetPlatform.flutter:
+        var testRunner = FlutterTestRunner(
+          flutterTesterPath: config.flutterTesterPath,
+        );
+        testIsolate = VmTestIsolate(testRunner: testRunner);
+        break;
+      case TargetPlatform.web:
+        var testRunner = ChromeTestRunner(
+          dartSdkFile: File(config.webDartSdk),
+          dartSdkSourcemap: File(config.webDartSdkSourcemaps),
+          stackTraceMapper: File(config.stackTraceMapper),
+          requireJS: File(config.requireJS),
+          config: config,
+        );
+        testIsolate = WebTestIsolate(testRunner: testRunner);
+        break;
+      case TargetPlatform.flutterWeb:
+        var testRunner = ChromeTestRunner(
+          dartSdkFile: File(config.flutterWebDartSdk),
+          dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
+          stackTraceMapper: File(config.stackTraceMapper),
+          requireJS: File(config.requireJS),
+          config: config,
+        );
+        testIsolate = WebTestIsolate(testRunner: testRunner);
+        break;
+    }
+    loadingIsolates.add(testIsolate.start(result, () {}).then((_) {
+      testIsolates.add(testIsolate);
+    }, onError: (dynamic err, StackTrace st) {
+      print(err);
+      print(st);
+      testIsolate.dispose();
+      exit(1);
+    }));
+  }
+  await Future.wait(loadingIsolates);
 
-  switch (config.targetPlatform) {
-    case TargetPlatform.dart:
-      var testRunner = VmTestRunner(
-        dartExecutable: config.dartPath,
-      );
-      testIsolate = VmTestIsolate(testRunner: testRunner);
-      break;
-    case TargetPlatform.flutter:
-      var testRunner = FlutterTestRunner(
-        flutterTesterPath: config.flutterTesterPath,
-      );
-      testIsolate = VmTestIsolate(testRunner: testRunner);
-      break;
-    case TargetPlatform.web:
-      var testRunner = ChromeTestRunner(
-        dartSdkFile: File(config.webDartSdk),
-        dartSdkSourcemap: File(config.webDartSdkSourcemaps),
-        stackTraceMapper: File(config.stackTraceMapper),
-        requireJS: File(config.requireJS),
-        config: config,
-      );
-      testIsolate = WebTestIsolate(testRunner: testRunner);
-      break;
-    case TargetPlatform.flutterWeb:
-      var testRunner = ChromeTestRunner(
-        dartSdkFile: File(config.flutterWebDartSdk),
-        dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
-        stackTraceMapper: File(config.stackTraceMapper),
-        requireJS: File(config.requireJS),
-        config: config,
-      );
-      testIsolate = WebTestIsolate(testRunner: testRunner);
-      break;
-  }
-  try {
-    await testIsolate.start(result, () {});
-  } on Exception catch (err, st) {
-    print(err);
-    print(st);
-    testIsolate.dispose();
-    exit(1);
-  }
   var writer = TestWriter(
     projectRoot: config.packageRootPath,
     verbose: verbose,
     ci: ci,
   );
+
   if (batchMode) {
     writer.writeHeader();
-    for (var testFileUri in testInformation.keys) {
-      for (var testInfo in testInformation[testFileUri]) {
-        var testResult = await testIsolate.runTest(testInfo);
-        writer.writeTest(testResult, testInfo);
-      }
+    var workLists = <List<TestInfo>>[
+      for (var i = 0; i < concurrency; i++) <TestInfo>[],
+    ];
+    var currentTarget = 0;
+    void addAndSwitch(TestInfo testInfo) {
+      workLists[currentTarget].add(testInfo);
+      currentTarget += 1;
+      currentTarget %= concurrency;
     }
+
+    <TestInfo>[
+      for (var testFileUri in testInformation.keys)
+        for (var testInfo in testInformation[testFileUri]) testInfo
+    ]
+      ..shuffle()
+      ..forEach(addAndSwitch);
+
+    await Future.wait(<Future<void>>[
+      for (var i = 0; i < concurrency; i++)
+        (() async {
+          var tests = workLists[i];
+          for (var testInfo in tests) {
+            var testResult = await testIsolates[i].runTest(testInfo);
+            writer.writeTest(testResult, testInfo);
+          }
+        })()
+    ]);
+
     writer.writeSummary();
     if (coverageOutputPath != null) {
       var packagesPath = const LocalFileSystem()
           .path
           .join(config.packageRootPath, '.dart_tool', 'package_config.json');
       print('Collecting coverage data...');
-      await coverage.collectCoverageIsolate(testIsolate.vmService,
+      await coverage.collectCoverageIsolate(testIsolates.single.vmService,
           (String libraryName) => libraryName.contains(appName), packagesPath);
       await coverage.writeCoverageData(
         coverageOutputPath,
         packagesPath: packagesPath,
       );
     }
-    testIsolate.dispose();
+    for (var testIsolate in testIsolates) {
+      testIsolate.dispose();
+    }
     exit(writer.exitCode);
   }
 
   var resident = Resident(
     config: config,
     compiler: compiler,
-    testIsolate: testIsolate,
+    testIsolate: testIsolates.single,
     writer: writer,
   );
   print('READY');
