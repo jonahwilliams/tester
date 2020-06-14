@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart=2.8
 import 'dart:async';
 
 import 'package:file/file.dart';
@@ -58,6 +59,9 @@ Future<void> testDartVmCompile() async {
 
   var fileSystem = MemoryFileSystem.test();
   var config = createTestConfig(fileSystem, TargetPlatform.dart);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
 
   var compiler = Compiler(
     config: config,
@@ -65,6 +69,8 @@ Future<void> testDartVmCompile() async {
     fileSystem: fileSystem,
     processManager: processManager,
     timeout: -1,
+    soundNullSafety: null,
+    enabledExperiments: const <String>[],
   );
 
   var uri = await compiler.start({});
@@ -109,6 +115,9 @@ Future<void> testFlutterCompile() async {
 
   var fileSystem = MemoryFileSystem.test();
   var config = createTestConfig(fileSystem, TargetPlatform.flutter);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
 
   var compiler = Compiler(
     config: config,
@@ -116,6 +125,8 @@ Future<void> testFlutterCompile() async {
     fileSystem: fileSystem,
     processManager: processManager,
     timeout: -1,
+    soundNullSafety: null,
+    enabledExperiments: const <String>[],
   );
 
   var uri = await compiler.start({});
@@ -160,6 +171,9 @@ Future<void> testDartWebCompile() async {
 
   var fileSystem = MemoryFileSystem.test();
   var config = createTestConfig(fileSystem, TargetPlatform.web);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
 
   var compiler = Compiler(
     config: config,
@@ -167,6 +181,8 @@ Future<void> testDartWebCompile() async {
     fileSystem: fileSystem,
     processManager: processManager,
     timeout: -1,
+    soundNullSafety: null,
+    enabledExperiments: const <String>[],
   );
 
   var uri = await compiler.start({});
@@ -213,6 +229,9 @@ Future<void> testFlutterWebCompile() async {
 
   var fileSystem = MemoryFileSystem.test();
   var config = createTestConfig(fileSystem, TargetPlatform.flutterWeb);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
 
   var compiler = Compiler(
     config: config,
@@ -220,6 +239,8 @@ Future<void> testFlutterWebCompile() async {
     fileSystem: fileSystem,
     processManager: processManager,
     timeout: -1,
+    soundNullSafety: null,
+    enabledExperiments: const <String>[],
   );
 
   var uri = await compiler.start({});
@@ -227,4 +248,176 @@ Future<void> testFlutterWebCompile() async {
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri,
       Uri.parse('file:///project/main.TargetPlatform.flutterWeb.dart.dill'));
+}
+
+/// Validate that the compilation arguments are correct for the Dart VM
+/// with experiments.
+Future<void> testDartVmCompileWithExperiments() async {
+  var controller = StreamController<List<int>>();
+  var processManager = FakeProcessManager.list([
+    FakeCommand(
+        command: [
+          '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
+          '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
+          '--target=vm',
+          '--sdk-root=/flutter/bin/cache/dart-sdk',
+          '--platform=file:///flutter/bin/cache/dart-sdk/lib/_internal/vm_platform_strong.dill',
+          '--enable-asserts',
+          '--packages=file:///project/.packages',
+          '--no-link-platform',
+          '--output-dill=/project/main.TargetPlatform.dart.dart.dill',
+          '--incremental',
+          '--filesystem-root',
+          '/',
+          '--filesystem-root',
+          '/project',
+          '--filesystem-scheme',
+          'org-dartlang-app',
+          '--enable-experiment=foo',
+          '--enable-experiment=bar',
+        ],
+        stdin: IOSink(controller),
+        stdout: '''result 97db4d90-861a-4b0d-951e-77319d74ce06
+97db4d90-861a-4b0d-951e-77319d74ce06
++file:///a.dart
+97db4d90-861a-4b0d-951e-77319d74ce06 /project/.dart_tool/tester/main.TargetPlatform.dart.dart.dill 0
+''')
+  ]);
+
+  var fileSystem = MemoryFileSystem.test();
+  var config = createTestConfig(fileSystem, TargetPlatform.dart);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
+
+  var compiler = Compiler(
+    config: config,
+    compilerMode: TargetPlatform.dart,
+    fileSystem: fileSystem,
+    processManager: processManager,
+    timeout: -1,
+    soundNullSafety: null,
+    enabledExperiments: const <String>[
+      'foo',
+      'bar',
+    ],
+  );
+
+  var uri = await compiler.start({});
+
+  expect(fileSystem.file('/project/main.dart').existsSync(), true);
+  expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
+}
+
+/// Validate that the compilation arguments are correct for the Dart VM
+/// with null safety.
+Future<void> testDartVmCompileWithNullSafety() async {
+  var controller = StreamController<List<int>>();
+  var processManager = FakeProcessManager.list([
+    FakeCommand(
+        command: [
+          '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
+          '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
+          '--target=vm',
+          '--sdk-root=/flutter/bin/cache/dart-sdk',
+          '--platform=file:///flutter/bin/cache/dart-sdk/lib/_internal/vm_platform_strong.dill',
+          '--enable-asserts',
+          '--packages=file:///project/.packages',
+          '--no-link-platform',
+          '--output-dill=/project/main.TargetPlatform.dart.dart.dill',
+          '--incremental',
+          '--filesystem-root',
+          '/',
+          '--filesystem-root',
+          '/project',
+          '--filesystem-scheme',
+          'org-dartlang-app',
+          '--null-safety',
+        ],
+        stdin: IOSink(controller),
+        stdout: '''result 97db4d90-861a-4b0d-951e-77319d74ce06
+97db4d90-861a-4b0d-951e-77319d74ce06
++file:///a.dart
+97db4d90-861a-4b0d-951e-77319d74ce06 /project/.dart_tool/tester/main.TargetPlatform.dart.dart.dill 0
+''')
+  ]);
+
+  var fileSystem = MemoryFileSystem.test();
+  var config = createTestConfig(fileSystem, TargetPlatform.dart);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
+
+  var compiler = Compiler(
+    config: config,
+    compilerMode: TargetPlatform.dart,
+    fileSystem: fileSystem,
+    processManager: processManager,
+    timeout: -1,
+    soundNullSafety: true,
+    enabledExperiments: const <String>[],
+  );
+
+  var uri = await compiler.start({});
+
+  expect(fileSystem.file('/project/main.dart').existsSync(), true);
+  expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
+}
+
+/// Validate that the compilation arguments are correct for the Dart VM
+/// with null safety disabled.
+Future<void> testDartVmCompileWithDisableNullSafety() async {
+  var controller = StreamController<List<int>>();
+  var processManager = FakeProcessManager.list([
+    FakeCommand(
+        command: [
+          '/flutter/bin/cache/dart-sdk/bin/dart',
+          '--disable-dart-dev',
+          '/flutter/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot',
+          '--target=vm',
+          '--sdk-root=/flutter/bin/cache/dart-sdk',
+          '--platform=file:///flutter/bin/cache/dart-sdk/lib/_internal/vm_platform_strong.dill',
+          '--enable-asserts',
+          '--packages=file:///project/.packages',
+          '--no-link-platform',
+          '--output-dill=/project/main.TargetPlatform.dart.dart.dill',
+          '--incremental',
+          '--filesystem-root',
+          '/',
+          '--filesystem-root',
+          '/project',
+          '--filesystem-scheme',
+          'org-dartlang-app',
+          '--no-null-safety',
+        ],
+        stdin: IOSink(controller),
+        stdout: '''result 97db4d90-861a-4b0d-951e-77319d74ce06
+97db4d90-861a-4b0d-951e-77319d74ce06
++file:///a.dart
+97db4d90-861a-4b0d-951e-77319d74ce06 /project/.dart_tool/tester/main.TargetPlatform.dart.dart.dill 0
+''')
+  ]);
+
+  var fileSystem = MemoryFileSystem.test();
+  var config = createTestConfig(fileSystem, TargetPlatform.dart);
+  fileSystem.file('project/.packages')
+    ..createSync(recursive: true)
+    ..writeAsStringSync('project:project/');
+
+  var compiler = Compiler(
+    config: config,
+    compilerMode: TargetPlatform.dart,
+    fileSystem: fileSystem,
+    processManager: processManager,
+    timeout: -1,
+    soundNullSafety: false,
+    enabledExperiments: const <String>[],
+  );
+
+  var uri = await compiler.start({});
+
+  expect(fileSystem.file('/project/main.dart').existsSync(), true);
+  expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
 }

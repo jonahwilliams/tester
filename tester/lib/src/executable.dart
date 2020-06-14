@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart=2.8
 import 'dart:async';
 import 'dart:io';
 
@@ -50,6 +51,17 @@ final argParser = ArgParser()
     help: 'The maximum number of seconds a single test can elapse before it is '
         'consider a failure. To disable timeouts, pass -1 as a value.',
     defaultsTo: '15',
+  )
+  ..addMultiOption(
+    'enable-experiment',
+    help: 'The name of an experimental Dart feature to enable. For more info '
+        'see: https://github.com/dart-lang/sdk/blob/master/docs/process/'
+        'experimental-flags.md',
+  )
+  ..addFlag(
+    'sound-null-safety',
+    help: 'Whether to override the default null safety setting.',
+    defaultsTo: null,
   );
 
 Future<void> main(List<String> args) async {
@@ -141,5 +153,7 @@ Future<void> main(List<String> args) async {
         : null,
     timeout: int.tryParse(argResults['timeout'] as String) ?? 15,
     concurrency: int.tryParse(argResults['concurrency'] as String),
+    enabledExperiments: argResults['enable-experiment'] as List<String>,
+    soundNullSafety: argResults['sound-null-safety'] as bool,
   );
 }

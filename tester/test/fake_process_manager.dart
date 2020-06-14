@@ -4,6 +4,7 @@
 
 // Taken from https://github.com/flutter/flutter/blob/master/packages/flutter_tools/test/src/fake_process_manager.dart
 
+// @dart=2.8
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart=2.8
 import 'dart:io';
 
 import 'package:file/local.dart';
@@ -26,6 +27,8 @@ void runApplication({
   @required String appName,
   @required int timeout,
   @required int concurrency,
+  @required List<String> enabledExperiments,
+  @required bool soundNullSafety,
 }) async {
   if (!batchMode || coverageOutputPath != null) {
     concurrency = 1;
@@ -35,6 +38,8 @@ void runApplication({
     config: config,
     compilerMode: config.targetPlatform,
     timeout: timeout,
+    soundNullSafety: soundNullSafety,
+    enabledExperiments: enabledExperiments,
   );
   var infoProvider = TestInformationProvider();
   var testInformation = <Uri, List<TestInfo>>{};
@@ -44,7 +49,7 @@ void runApplication({
 
   var result = await compiler.start(testInformation);
   if (result == null) {
-    return;
+    exit(1);
   }
 
   var testIsolates = <TestIsolate>[];

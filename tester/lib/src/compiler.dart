@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart=2.8
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -9,6 +10,7 @@ import 'dart:io';
 import 'package:file/file.dart';
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
+import 'package:package_config/package_config.dart';
 import 'package:process/process.dart';
 import 'package:tester/src/platform.dart';
 import 'package:uuid/uuid.dart';
@@ -180,6 +182,8 @@ class Compiler {
     @required this.config,
     @required this.compilerMode,
     @required this.timeout,
+    @required this.enabledExperiments,
+    @required this.soundNullSafety,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
@@ -191,12 +195,15 @@ class Compiler {
   final TargetPlatform compilerMode;
   final Platform platform;
   final int timeout;
+  final List<String> enabledExperiments;
+  final bool soundNullSafety;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
   StdoutHandler _stdoutHandler;
   Process _frontendServer;
   File _mainFile;
+  PackageConfig _packageConfig;
 
   DateTime get lastCompiled => _lastCompiledTime;
 
@@ -208,9 +215,24 @@ class Compiler {
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
+    var packagesUri = fileSystem
+        .file(fileSystem.path.join(config.packageRootPath, '.packages'))
+        .absolute
+        .uri;
+    _packageConfig = await loadPackageConfigUri(packagesUri, loader: (Uri uri) {
+      var file = fileSystem.file(uri);
+      if (file.existsSync()) {
+        return file.readAsBytes();
+      }
+      return null;
+    });
+    var package = testInformation.isNotEmpty
+        ? _packageConfig.packageOf(testInformation.keys.first)
+        : null;
+
     _mainFile =
         fileSystem.file(fileSystem.path.join(workspace.path, 'main.dart'));
-    _regenerateMain(testInformation, timeout);
+    _regenerateMain(testInformation, timeout, package);
 
     var dillOutput = fileSystem
         .file(fileSystem.path
@@ -218,9 +240,7 @@ class Compiler {
         .absolute;
 
     _stdoutHandler = StdoutHandler();
-    var packagesUri = fileSystem
-        .file(fileSystem.path.join(config.packageRootPath, '.packages'))
-        .uri;
+
     var args = <String>[
       config.dartPath,
       '--disable-dart-dev',
@@ -237,6 +257,10 @@ class Compiler {
       fileSystem.path.join(config.packageRootPath),
       '--filesystem-scheme',
       'org-dartlang-app',
+      if (soundNullSafety == true) '--null-safety',
+      if (soundNullSafety == false) '--no-null-safety',
+      for (var experiment in enabledExperiments)
+        '--enable-experiment=$experiment',
     ];
     _frontendServer = await processManager.start(args);
     _frontendServer.stderr
@@ -263,7 +287,10 @@ class Compiler {
     List<Uri> invalidated,
     Map<Uri, List<TestInfo>> testInformation,
   ) async {
-    _regenerateMain(testInformation, timeout);
+    var package = testInformation.isNotEmpty
+        ? _packageConfig.packageOf(testInformation.keys.first)
+        : null;
+    _regenerateMain(testInformation, timeout, package);
     _stdoutHandler.reset();
     var pendingResult = _stdoutHandler.compilerOutput.future;
     var id = Uuid().v4();
@@ -329,8 +356,14 @@ class Compiler {
     throw StateError('_compilerMode was null');
   }
 
-  void _regenerateMain(Map<Uri, List<TestInfo>> testInformation, int timeout) {
+  void _regenerateMain(
+      Map<Uri, List<TestInfo>> testInformation, int timeout, Package package) {
     var contents = StringBuffer();
+    var langaugeVersion = package != null
+        ? '// @dart=${package.languageVersion.major}'
+            '.${package.languageVersion.minor}'
+        : '';
+    contents.writeln(langaugeVersion);
     for (var testFileUri in testInformation.keys) {
       var relativePath = fileSystem
           .file(fileSystem.path.relative(
@@ -342,16 +375,24 @@ class Compiler {
     }
     switch (compilerMode) {
       case TargetPlatform.dart:
-        contents.write(generateVmTestMain(timeout));
+        contents.write(generateVmTestMain(
+          timeout,
+        ));
         break;
       case TargetPlatform.web:
-        contents.write(generateWebTestMain(timeout));
+        contents.write(generateWebTestMain(
+          timeout,
+        ));
         break;
       case TargetPlatform.flutter:
-        contents.write(generateVmTestMain(timeout));
+        contents.write(generateVmTestMain(
+          timeout,
+        ));
         break;
       case TargetPlatform.flutterWeb:
-        contents.write(generateFlutterWebTestMain(timeout));
+        contents.write(generateFlutterWebTestMain(
+          timeout,
+        ));
         break;
     }
     contents.writeln('var testRegistry = {');
