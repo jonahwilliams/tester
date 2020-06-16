@@ -57,12 +57,10 @@ void runApplication({
   for (var i = 0; i < concurrency; i++) {
     TestIsolate testIsolate;
     switch (config.targetPlatform) {
+      // Use the flutter tester platform for VM tests to improve performance.
+      // The set of supported libraries is almost the same, except for mirrors
+      // which is not worth supporting.
       case TargetPlatform.dart:
-        var testRunner = VmTestRunner(
-          dartExecutable: config.dartPath,
-        );
-        testIsolate = VmTestIsolate(testRunner: testRunner);
-        break;
       case TargetPlatform.flutter:
         var testRunner = FlutterTestRunner(
           flutterTesterPath: config.flutterTesterPath,
