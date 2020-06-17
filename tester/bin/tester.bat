@@ -35,12 +35,14 @@ SET program_entrypoint="package:tester/src/executable.dart"
 
     :snapshot
         ECHO precompiling tester snapshot...
-        CALL dart pub get --no-precompile > nul
+        PUSHD "%TESTER_ROOT%"
 
-        CALL dart --disable-dart-dev --snapshot="%snapshot_path%" --snapshot-kind=app-jit --packages="%package_config%" --no-enable-mirrors "%program_entrypoint%" "test/compiler_test.dart" > NUL
+        CALL dart pub get --no-precompile > nul
+        CALL dart --disable-dart-dev --snapshot="%snapshot_path%" --snapshot-kind=app-jit --packages="%package_config%" --no-enable-mirrors "%program_entrypoint%" test/compiler_test.dart > NUL
 
         >"%version_stamp%" ECHO %current_version%
         CALL dart --disable-dart-dev --version 2> "%dart_stamp%"
+        POPD
         GOTO run_program
 
     :run_program

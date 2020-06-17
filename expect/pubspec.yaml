@@ -1,8 +1,6 @@
 name: expect
-description: A tiny expect for writing tests.
+description: (WIP) A tiny expectation library for writing tests based on matcher and test.
 
 environment:
   sdk: '>=2.8.0 <3.0.0'
 
-dependencies:
-  matcher: ^0.12.6

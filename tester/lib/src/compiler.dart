@@ -364,14 +364,19 @@ class Compiler {
             '.${package.languageVersion.minor}'
         : '';
     contents.writeln(langaugeVersion);
+    var importNumber = 0;
+    var importNumbers = <Uri, int>{};
     for (var testFileUri in testInformation.keys) {
+      importNumbers[testFileUri] = importNumber;
       var relativePath = fileSystem
           .file(fileSystem.path.relative(
             testFileUri.toFilePath(windows: platform.isWindows),
             from: config.packageRootPath,
           ))
           .uri;
-      contents.writeln('import "org-dartlang-app:///$relativePath";');
+      contents.writeln(
+          'import "org-dartlang-app:///$relativePath" as i$importNumber;');
+      importNumber += 1;
     }
     switch (compilerMode) {
       case TargetPlatform.dart:
@@ -399,7 +404,10 @@ class Compiler {
     for (var testFileUri in testInformation.keys) {
       contents.writeln('"${testFileUri}": {');
       for (var testInfo in testInformation[testFileUri]) {
-        contents.writeln('"${testInfo.name}": ${testInfo.name},');
+        contents.writeln(
+          '"${testInfo.name}": '
+          'i${importNumbers[testFileUri]}.${testInfo.name},',
+        );
       }
       contents.writeln('},');
     }
