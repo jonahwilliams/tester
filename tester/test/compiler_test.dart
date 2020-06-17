@@ -9,7 +9,7 @@ import 'package:file/file.dart';
 import 'package:file/memory.dart';
 import 'package:tester/src/compiler.dart';
 import 'package:tester/src/config.dart';
-import 'package:test_shim/test_shim.dart';
+import 'package:expect/expect.dart';
 
 import 'fake_process_manager.dart';
 

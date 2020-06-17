@@ -1,0 +1,8 @@
+name: expect
+description: A tiny expect for writing tests.
+
+environment:
+  sdk: '>=2.8.0 <3.0.0'
+
+dependencies:
+  matcher: ^0.12.6

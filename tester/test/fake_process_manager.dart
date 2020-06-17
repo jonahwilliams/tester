@@ -11,7 +11,7 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 import 'package:process/process.dart';
-import 'package:test_shim/test_shim.dart';
+import 'package:expect/expect.dart';
 
 /// A command for [FakeProcessManager].
 @immutable

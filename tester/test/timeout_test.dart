@@ -6,7 +6,7 @@
 import 'dart:io';
 
 import 'package:process/process.dart';
-import 'package:test_shim/test_shim.dart';
+import 'package:expect/expect.dart';
 
 /// Spin up a tester process running a test that takes longer
 /// than the configured timeout.
