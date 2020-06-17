@@ -27,5 +27,5 @@ dependencies:
   process: 3.0.13
 
 dev_dependencies:
-  test_shim:
-    path: ../test_shim
+  expect:
+    path: ../expect

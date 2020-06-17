@@ -6,7 +6,7 @@
 import 'dart:io';
 
 import 'package:process/process.dart';
-import 'package:test_shim/test_shim.dart';
+import 'package:expect/expect.dart';
 
 /// Tests that a print statement in a test body shows up in the resulting
 /// output of a vm test.

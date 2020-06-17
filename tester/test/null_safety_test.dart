@@ -6,7 +6,7 @@
 import 'dart:io';
 
 import 'package:process/process.dart';
-import 'package:test_shim/test_shim.dart';
+import 'package:expect/expect.dart';
 
 /// Test that --enable-experiment=non-nullable is functioning
 /// correctly.

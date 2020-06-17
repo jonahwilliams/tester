@@ -2,17 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:test/test.dart' as test;
-export 'package:test/test.dart'
-    hide
-        test,
-        group,
-        setUp,
-        setUpAll,
-        tearDown,
-        tearDownAll,
-        expect,
-        expectAsync;
+import 'package:matcher/matcher.dart';
+export 'package:matcher/matcher.dart';
 
 /// Assert that [actual] matches [matcher].
 ///
@@ -25,7 +16,7 @@ export 'package:test/test.dart'
 ///
 /// If the assertion fails a [TestFailure] is thrown.
 void expect(dynamic actual, dynamic matcher, {String reason}) {
-  var wrappedMatcher = test.wrapMatcher(matcher);
+  var wrappedMatcher = wrapMatcher(matcher);
   var matchState = <dynamic, dynamic>{};
   try {
     if (wrappedMatcher.matches(actual, matchState)) {
@@ -34,7 +25,7 @@ void expect(dynamic actual, dynamic matcher, {String reason}) {
   } catch (_) {
     // Do nothing
   }
-  var mismatchDescription = test.StringDescription();
+  var mismatchDescription = StringDescription();
   wrappedMatcher.describeMismatch(
     actual,
     mismatchDescription,
@@ -59,4 +50,4 @@ void expect(dynamic actual, dynamic matcher, {String reason}) {
 }
 
 String _prettyPrint(dynamic value) =>
-    test.StringDescription().addDescriptionOf(value).toString();
+    StringDescription().addDescriptionOf(value).toString();
