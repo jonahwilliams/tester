@@ -4,3 +4,5 @@ description: (WIP) A tiny expectation library for writing tests based on matcher
 environment:
   sdk: '>=2.8.0 <3.0.0'
 
+dependencies:
+  matcher: ^0.12.8

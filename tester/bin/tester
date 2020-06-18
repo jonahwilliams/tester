@@ -53,10 +53,12 @@ function generate_snapshot() {
     local l_current_dart_version="$(dart --disable-dart-dev --version 2>&1)"
     if [[ ! -f "$snapshot_path" || ! -s "$version_stamp" || ! -s "$dart_stamp" || "$(cat $version_stamp)" != "$l_current_version" || "$(cat "$dart_stamp")" != "$l_current_dart_version" ]]; then
         echo "precompiling tester snapshot..."
+        pushd "$TESTER_ROOT" > /dev/null
         "$dart_exe" pub get --no-precompile > /dev/null
-        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind="$snapshot_kind" --packages="$package_config" --no-enable-mirrors "$program_entrypoint" > /dev/null
+        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind="$snapshot_kind" --packages="$package_config" --no-enable-mirrors "$program_entrypoint" test/compiler_test.dart > /dev/null
         echo "$l_current_dart_version" > "$dart_stamp"
         echo "$l_current_version" > "$version_stamp"
+        popd > /dev/null
     fi
 }
 
