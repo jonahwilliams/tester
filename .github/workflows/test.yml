@@ -33,9 +33,4 @@ jobs:
         env:
           FLUTTER_ROOT: ../../flutter
           TESTER_SNAPSHOT_OVERRIDE: kernel
-      - name: test_expect
-        run: ../tester/bin/tester --platform=dart --ci -v
-        working-directory: tester/expect
-        env:
-          FLUTTER_ROOT: ../../flutter
-          TESTER_SNAPSHOT_OVERRIDE: kernel
+
