@@ -116,12 +116,17 @@ Future<void> main(List<String> args) async {
   var projectDirectory = Directory.current.path;
   List<Uri> tests;
   if (argResults.rest.isEmpty) {
-    tests = Directory(path.join(projectDirectory, 'test'))
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((file) => file.path.endsWith('_test.dart'))
-        .map((file) => file.absolute.uri)
-        .toList();
+    var testDirectory = Directory(path.join(projectDirectory, 'test'));
+    if (!testDirectory.existsSync()) {
+      tests = <Uri>[];
+    } else {
+      tests = Directory(path.join(projectDirectory, 'test'))
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('_test.dart'))
+          .map((file) => file.absolute.uri)
+          .toList();
+    }
   } else {
     tests =
         argResults.rest.map((String path) => File(path).absolute.uri).toList();
