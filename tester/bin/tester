@@ -55,7 +55,7 @@ function generate_snapshot() {
         echo "precompiling tester snapshot..."
         pushd "$TESTER_ROOT" > /dev/null
         "$dart_exe" pub get --no-precompile > /dev/null
-        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind="$snapshot_kind" --packages="$package_config" --no-enable-mirrors "$program_entrypoint" test/compiler_test.dart > /dev/null
+        "$dart_exe" --disable-dart-dev --snapshot="$snapshot_path" --snapshot-kind="$snapshot_kind" --packages="$package_config" --no-enable-mirrors "$program_entrypoint" --no-debugger test/compiler_test.dart > /dev/null
         echo "$l_current_dart_version" > "$dart_stamp"
         echo "$l_current_version" > "$version_stamp"
         popd > /dev/null

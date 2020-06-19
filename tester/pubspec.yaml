@@ -7,6 +7,8 @@ environment:
   sdk: '>=2.8.0 <3.0.0'
 
 dependencies:
+  devtools_server: 0.2.5
+  devtools: 0.2.5
   yaml: 2.2.1
   coverage: 0.14.0
   shelf: 0.7.5

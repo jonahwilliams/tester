@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
+import 'package:devtools_server/devtools_server.dart' as devtools_server;
 
 import 'coverage.dart';
 import 'test_info.dart';
@@ -29,19 +30,22 @@ void runApplication({
   @required int concurrency,
   @required List<String> enabledExperiments,
   @required bool soundNullSafety,
+  @required bool debugger,
 }) async {
-  if (!batchMode || coverageOutputPath != null) {
+  if (!batchMode || (coverageOutputPath != null || debugger)) {
     concurrency = 1;
   }
   var coverage = CoverageService();
   var compiler = Compiler(
     config: config,
     compilerMode: config.targetPlatform,
-    timeout: timeout,
+    timeout: debugger ? -1 : timeout,
     soundNullSafety: soundNullSafety,
     enabledExperiments: enabledExperiments,
   );
-  var infoProvider = TestInformationProvider();
+  var infoProvider = TestInformationProvider(
+    config: config,
+  );
   var testInformation = <Uri, List<TestInfo>>{};
   for (var testFileUri in config.tests) {
     testInformation[testFileUri] = infoProvider.collectTestInfo(testFileUri);
@@ -104,6 +108,21 @@ void runApplication({
     verbose: verbose,
     ci: ci,
   );
+  HttpServer devtoolServer;
+  if (debugger) {
+    devtoolServer = await devtools_server.serveDevTools(
+      enableStdinCommands: false,
+    );
+    await devtools_server.launchDevTools(
+      <String, dynamic>{
+        'reuseWindows': true,
+      },
+      testIsolates.single.vmServiceAddress,
+      'http://${devtoolServer.address.host}:${devtoolServer.port}',
+      false, // headless mode,
+      false, // machine mode
+    );
+  }
 
   if (batchMode) {
     writer.writeHeader();
@@ -129,7 +148,7 @@ void runApplication({
         (() async {
           var tests = workLists[i];
           for (var testInfo in tests) {
-            var testResult = await testIsolates[i].runTest(testInfo);
+            var testResult = await testIsolates[i].runTest(testInfo, debugger);
             writer.writeTest(testResult, testInfo);
           }
         })()
@@ -151,6 +170,9 @@ void runApplication({
     for (var testIsolate in testIsolates) {
       testIsolate.dispose();
     }
+    if (devtoolServer != null) {
+      await devtoolServer.close();
+    }
     exit(writer.exitCode);
   }
 
@@ -160,6 +182,6 @@ void runApplication({
     testIsolate: testIsolates.single,
     writer: writer,
   );
-  print('READY');
+  print('VM Service listening at ${testIsolates.single.vmServiceAddress}');
   await resident.start();
 }

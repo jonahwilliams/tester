@@ -24,13 +24,16 @@ abstract class TestIsolate {
   FutureOr<void> dispose();
 
   /// Execute [testInfo]
-  Future<TestResult> runTest(TestInfo testInfo);
+  Future<TestResult> runTest(TestInfo testInfo, bool debugging);
 
   /// Reload the application with the incremental file defined at `incrementalDill`.
   Future<void> reload(Uri incrementalDill);
 
   /// The active vm service instance for this runner.
   VmService get vmService;
+
+  /// An http or ws address for external debuggers to connect to.
+  Uri get vmServiceAddress;
 }
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
@@ -42,10 +45,12 @@ class VmTestIsolate extends TestIsolate {
   final TestRunner _testRunner;
   IsolateRef _testIsolateRef;
   VmService _vmService;
+  ScriptList _scripts;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
     var launchResult = await _testRunner.start(entrypoint, onExit);
+    vmServiceAddress = launchResult.serviceUri;
     var websocketUrl =
         launchResult.serviceUri.replace(scheme: 'ws').toString() + 'ws';
     _vmService = await vmServiceConnectUri(websocketUrl);
@@ -58,6 +63,7 @@ class VmTestIsolate extends TestIsolate {
         isolate.pauseEvent.kind != EventKind.kResume) {
       await _vmService.resume(isolate.id);
     }
+    _scripts = await _vmService.getScripts(_testIsolateRef.id);
 
     await Future.wait([
       _vmService.streamListen(EventStreams.kLogging),
@@ -76,9 +82,18 @@ class VmTestIsolate extends TestIsolate {
   }
 
   @override
-  Future<TestResult> runTest(TestInfo testInfo) async {
+  Future<TestResult> runTest(TestInfo testInfo, bool debugger) async {
     Map<String, Object> result;
     try {
+      if (debugger) {
+        await _vmService.addBreakpoint(
+          _testIsolateRef.id,
+          _scripts.scripts
+              .firstWhere((script) => script.uri == testInfo.multiRootUri)
+              .id,
+          testInfo.line + 1,
+        );
+      }
       result = (await _vmService.callServiceExtension(
         'ext.callTest',
         isolateId: _testIsolateRef.id,
@@ -115,6 +130,9 @@ class VmTestIsolate extends TestIsolate {
 
   @override
   VmService get vmService => _vmService;
+
+  @override
+  Uri vmServiceAddress;
 }
 
 class WebTestIsolate extends TestIsolate {
@@ -125,6 +143,8 @@ class WebTestIsolate extends TestIsolate {
   final ChromeTestRunner testRunner;
   VmService _vmService;
   StreamSubscription<void> _logSubscription;
+  ScriptList _scripts;
+  IsolateRef _testIsolateRef;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
@@ -134,8 +154,12 @@ class WebTestIsolate extends TestIsolate {
 
     testRunner.updateCode(codeFile, manifestFile, sourceMapFile);
 
-    await testRunner.start(entrypoint, onExit);
+    var runnerStartResult = await testRunner.start(entrypoint, onExit);
+    vmServiceAddress = runnerStartResult.serviceUri;
     _vmService = testRunner.vmService;
+    var vm = await _vmService.getVM();
+    _testIsolateRef = vm.isolates.first;
+    _scripts = await _vmService.getScripts(_testIsolateRef.id);
 
     await Future.wait([
       _vmService.streamListen(EventStreams.kStdout),
@@ -173,12 +197,22 @@ class WebTestIsolate extends TestIsolate {
   }
 
   @override
-  Future<TestResult> runTest(TestInfo testInfo) async {
+  Future<TestResult> runTest(TestInfo testInfo, bool debugger) async {
+    if (debugger) {
+      await _vmService.addBreakpoint(
+        _testIsolateRef.id,
+        _scripts.scripts
+            .firstWhere((script) => script.uri == testInfo.multiRootUri)
+            .id,
+        testInfo.line + 1,
+      );
+    }
+
     Map<String, Object> result;
     try {
       result = (await _vmService.callServiceExtension(
         'ext.callTest',
-        // isolateId: _testIsolateRef.id,
+        isolateId: _testIsolateRef.id,
         args: <String, String>{
           'test': testInfo.name,
           'library': testInfo.testFileUri.toString(),
@@ -204,6 +238,9 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   VmService get vmService => _vmService;
+
+  @override
+  Uri vmServiceAddress;
 }
 
 /// The result of a test execution.
