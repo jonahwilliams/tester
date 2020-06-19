@@ -63,7 +63,7 @@ final argParser = ArgParser()
     help: 'Whether to override the default null safety setting.',
     defaultsTo: null,
   )
-  ..addOption('fluter-root',
+  ..addOption('flutter-root',
       help: 'The path to the root of a flutter checkout.');
 
 Future<void> main(List<String> args) async {
