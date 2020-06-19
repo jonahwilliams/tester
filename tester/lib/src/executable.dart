@@ -62,7 +62,9 @@ final argParser = ArgParser()
     'sound-null-safety',
     help: 'Whether to override the default null safety setting.',
     defaultsTo: null,
-  );
+  )
+  ..addOption('flutter-root',
+      help: 'The path to the root of a flutter checkout.');
 
 Future<void> main(List<String> args) async {
   if (args.contains('-h') || args.contains('--help')) {
@@ -81,8 +83,10 @@ Future<void> main(List<String> args) async {
   var argResults = argParser.parse(args);
 
   String flutterRoot;
-  if (Platform.environment['FLUTTER_ROOT'] != null) {
-    flutterRoot = Platform.environment['FLUTTER_ROOT'];
+  if (argResults['flutter-root'] != null) {
+    flutterRoot = path.normalize(argResults['flutter-root'] as String);
+  } else if (Platform.environment['FLUTTER_ROOT'] != null) {
+    flutterRoot = path.normalize(Platform.environment['FLUTTER_ROOT']);
   } else if (Platform.isWindows) {
     flutterRoot = File((await Process.run('where', <String>['flutter']))
             .stdout
