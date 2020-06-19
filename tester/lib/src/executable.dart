@@ -42,8 +42,8 @@ final argParser = ArgParser()
     'concurrency',
     abbr: 'j',
     help: 'The number of test isolates to run concurrently in batch mode. '
-        'This option only takes effect in batch mode without code coverage. '
-        'If not provided, defaults to 1',
+        'This option only takes effect in batch mode without --coverage or '
+        '--debugger. If not provided, defaults to 1',
     defaultsTo: '1',
   )
   ..addOption(
@@ -62,6 +62,12 @@ final argParser = ArgParser()
     'sound-null-safety',
     help: 'Whether to override the default null safety setting.',
     defaultsTo: null,
+  )
+  ..addFlag(
+    'debugger',
+    help:
+        'launch the devtools debugger and pause each test to allow stepping. ',
+    defaultsTo: false,
   )
   ..addOption('flutter-root',
       help: 'The path to the root of a flutter checkout.');
@@ -164,5 +170,6 @@ Future<void> main(List<String> args) async {
     concurrency: int.tryParse(argResults['concurrency'] as String),
     enabledExperiments: argResults['enable-experiment'] as List<String>,
     soundNullSafety: argResults['sound-null-safety'] as bool,
+    debugger: argResults['debugger'] as bool,
   );
 }

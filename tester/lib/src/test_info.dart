@@ -3,21 +3,42 @@
 // found in the LICENSE file.
 
 // @dart=2.8
-import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:file/local.dart';
+import 'package:meta/meta.dart';
+import 'package:file/file.dart';
 
 import 'package:_fe_analyzer_shared/src/parser/parser.dart';
 import 'package:_fe_analyzer_shared/src/scanner/token.dart';
 import 'package:_fe_analyzer_shared/src/parser/listener.dart';
 import 'package:_fe_analyzer_shared/src/scanner/utf8_bytes_scanner.dart';
 
+import 'config.dart';
+import 'platform.dart';
+
 /// An abstraction layer over the analyzer API.
 class TestInformationProvider {
-  const TestInformationProvider();
+  TestInformationProvider({
+    this.fileSystem = const LocalFileSystem(),
+    this.platform = const LocalPlatform(),
+    @required this.config,
+  });
+
+  final FileSystem fileSystem;
+  final Platform platform;
+  final Config config;
 
   /// Collect all top-level methods that begin with 'test'.
   List<TestInfo> collectTestInfo(Uri testFileUri) {
-    var rawBytes = File(testFileUri.toFilePath()).readAsBytesSync();
+    var testUri = testFileUri.toFilePath(windows: platform.isWindows);
+    var relativePath = fileSystem
+        .file(fileSystem.path.relative(
+          testUri,
+          from: config.packageRootPath,
+        ))
+        .uri;
+    var rawBytes = fileSystem.file(testUri).readAsBytesSync();
     var bytes = Uint8List(rawBytes.length + 1);
     bytes.setRange(0, rawBytes.length, rawBytes);
     var scanner = Utf8BytesScanner(
@@ -25,7 +46,23 @@ class TestInformationProvider {
       includeComments: true,
     );
     var firstToken = scanner.tokenize();
-    var collector = TestNameCollector(testFileUri, firstToken);
+
+    var offsetTable = <int, int>{};
+    var offset = 0;
+    var line = 0;
+    for (var byte in rawBytes) {
+      offsetTable[offset] = line;
+      if (byte == 0xA) {
+        line += 1;
+      }
+      offset += 1;
+    }
+    var collector = TestNameCollector(
+      testFileUri,
+      firstToken,
+      'org-dartlang-app:///$relativePath',
+      offsetTable,
+    );
     Parser(collector).parseUnit(firstToken);
     return collector.testInfo;
   }
@@ -37,12 +74,18 @@ class TestInfo {
     this.description,
     this.testFileUri,
     this.testToken,
+    this.multiRootUri,
+    this.line,
+    this.column,
   });
 
   final String name;
   final String description;
   final Uri testFileUri;
+  final String multiRootUri;
   final Token testToken;
+  final int line;
+  final int column;
 }
 
 /// Collect the names of top level methods that begin with tests.
@@ -50,10 +93,13 @@ class TestInfo {
 /// If there is a block comment prior to the test with a `[test]` string,
 /// include that as the test description.
 class TestNameCollector extends Listener {
-  TestNameCollector(this.testFileUri, this.testToken);
+  TestNameCollector(
+      this.testFileUri, this.testToken, this.multiRootUri, this.offsetTable);
 
   final Uri testFileUri;
+  final String multiRootUri;
   final Token testToken;
+  final Map<int, int> offsetTable;
 
   final testInfo = <TestInfo>[];
 
@@ -87,6 +133,8 @@ class TestNameCollector extends Listener {
       description: description.toString(),
       testFileUri: testFileUri,
       testToken: testToken,
+      multiRootUri: multiRootUri,
+      line: offsetTable[beginToken.offset],
     ));
   }
 }

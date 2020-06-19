@@ -274,7 +274,6 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   @override
   Future<String> dartSourceContents(String serverPath) async {
     if (!serverPath.endsWith('.dart')) return null;
-    print(serverPath);
     return File(path.join(config.packageRootPath, serverPath))
         .readAsStringSync();
   }
@@ -282,9 +281,8 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   @override
   Future<String> sourceMapContents(String serverPath) async {
     if (!serverPath.endsWith('lib.js.map')) return null;
-    if (!serverPath.startsWith('/')) serverPath = '/$serverPath';
-    // Strip the .map, sources are looked up by their js path.
-    return utf8.decode(sourcemaps[path.withoutExtension(serverPath)]);
+    var result = sourcemaps[serverPath] ?? sourcemaps['/$serverPath'];
+    return utf8.decode(result);
   }
 
   Future<shelf.Response> _handleRequest(shelf.Request request) async {

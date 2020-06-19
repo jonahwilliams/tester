@@ -28,7 +28,7 @@ class Resident {
     @required this.config,
     @required this.testIsolate,
     @required this.writer,
-  });
+  }) : infoProvider = TestInformationProvider(config: config);
 
   final ProjectFileInvalidator projectFileInvalidator =
       ProjectFileInvalidator();
@@ -37,7 +37,7 @@ class Resident {
   final Config config;
   final TestIsolate testIsolate;
   final TestWriter writer;
-  final infoProvider = TestInformationProvider();
+  final TestInformationProvider infoProvider;
   Map<Uri, List<TestInfo>> testInformation;
 
   Future<void> start() async {
@@ -83,7 +83,7 @@ class Resident {
         writer.writeHeader();
         for (var testFileUri in testInformation.keys) {
           for (var testInfo in testInformation[testFileUri]) {
-            var testResult = await testIsolate.runTest(testInfo);
+            var testResult = await testIsolate.runTest(testInfo, false);
             writer.writeTest(testResult, testInfo);
           }
         }
@@ -123,7 +123,7 @@ class Resident {
       var testInfos = testInformation[testUri];
       writer.writeHeader();
       for (var testInfo in testInfos) {
-        var testResult = await testIsolate.runTest(testInfo);
+        var testResult = await testIsolate.runTest(testInfo, false);
         writer.writeTest(testResult, testInfo);
       }
       writer.writeSummary();

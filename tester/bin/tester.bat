@@ -38,7 +38,7 @@ SET program_entrypoint="package:tester/src/executable.dart"
         PUSHD "%TESTER_ROOT%"
 
         CALL dart pub get --no-precompile > nul
-        CALL dart --disable-dart-dev --snapshot="%snapshot_path%" --snapshot-kind=app-jit --packages="%package_config%" --no-enable-mirrors "%program_entrypoint%" test/compiler_test.dart > NUL
+        CALL dart --disable-dart-dev --snapshot="%snapshot_path%" --snapshot-kind=app-jit --packages="%package_config%" --no-enable-mirrors "%program_entrypoint%" --no-debugger test/compiler_test.dart > NUL
 
         >"%version_stamp%" ECHO %current_version%
         CALL dart --disable-dart-dev --version 2> "%dart_stamp%"
