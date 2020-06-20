@@ -46,9 +46,12 @@ void runApplication({
   var infoProvider = TestInformationProvider(
     config: config,
   );
+  var testCount = 0;
   var testInformation = <Uri, List<TestInfo>>{};
   for (var testFileUri in config.tests) {
-    testInformation[testFileUri] = infoProvider.collectTestInfo(testFileUri);
+    var infos = infoProvider.collectTestInfo(testFileUri);
+    testCount += infos.length;
+    testInformation[testFileUri] = infos;
   }
 
   var result = await compiler.start(testInformation);
@@ -107,6 +110,7 @@ void runApplication({
     projectRoot: config.packageRootPath,
     verbose: verbose,
     ci: ci,
+    testCount: testCount,
   );
   HttpServer devtoolServer;
   if (debugger) {
