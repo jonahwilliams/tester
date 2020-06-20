@@ -20,6 +20,7 @@ abstract class TestWriter {
     @required String projectRoot,
     @required bool verbose,
     @required bool ci,
+    @required int testCount,
   }) {
     if (ci) {
       return CiTestWriter();
@@ -27,6 +28,7 @@ abstract class TestWriter {
     return TerminalTestWriter(
       projectRoot: projectRoot,
       verbose: verbose,
+      testCount: testCount,
     );
   }
 
@@ -91,43 +93,76 @@ class TerminalTestWriter implements TestWriter {
   TerminalTestWriter({
     @required this.projectRoot,
     @required this.verbose,
+    @required this.testCount,
   });
 
   final bool verbose;
   final stopwatch = Stopwatch();
   final String projectRoot;
+  final failedResults = <TestResult>[];
+  final failedInfos = <TestInfo>[];
   final console = Console();
+  final int testCount;
   int passed = 0;
   int failed = 0;
+  int lastUpdate = -1;
 
   @override
   void writeHeader() {
     passed = 0;
     failed = 0;
+    failedResults.clear();
+    failedInfos.clear();
     stopwatch.start();
+    lastUpdate = 0;
   }
 
   @override
   void writeTest(TestResult testResult, TestInfo testInfo) {
+    if (testResult.passed) {
+      passed += 1;
+    } else {
+      failedResults.add(testResult);
+      failedInfos.add(testInfo);
+      failed += 1;
+    }
+    if (stopwatch.elapsedMilliseconds - lastUpdate >= 16) {
+      console
+        ..setBackgroundColor(ConsoleColor.yellow)
+        ..setForegroundColor(ConsoleColor.black)
+        ..write(' RUNNING ')
+        ..resetColorAttributes()
+        ..setForegroundExtendedColor(_kGreyColor)
+        ..write(' ${passed + failed}/ $testCount ')
+        ..resetColorAttributes()
+        ..write('\n');
+      lastUpdate = stopwatch.elapsedMilliseconds;
+    }
+  }
+
+  void writePassedTest(TestResult testResult, TestInfo testInfo) {
     var humanFileName = path.relative(
       testResult.testFileUri.toFilePath(),
       from: projectRoot,
     );
-    if (testResult.passed) {
-      passed += 1;
-      console
-        ..setBackgroundColor(ConsoleColor.brightGreen)
-        ..setForegroundColor(ConsoleColor.black)
-        ..write(' PASS ')
-        ..resetColorAttributes()
-        ..setForegroundExtendedColor(_kGreyColor)
-        ..write(' $humanFileName ')
-        ..resetColorAttributes()
-        ..write(testInfo.name)
-        ..write('\n');
-      return;
-    }
-    failed += 1;
+    console
+      ..setBackgroundColor(ConsoleColor.brightGreen)
+      ..setForegroundColor(ConsoleColor.black)
+      ..write(' PASS ')
+      ..resetColorAttributes()
+      ..setForegroundExtendedColor(_kGreyColor)
+      ..write(' $humanFileName ')
+      ..resetColorAttributes()
+      ..write(testInfo.name)
+      ..write('\n');
+    return;
+  }
+
+  void _writeFailedTest(TestResult testResult, TestInfo testInfo) {
+    var humanFileName = path.relative(
+      testResult.testFileUri.toFilePath(),
+      from: projectRoot,
+    );
     console
       ..setBackgroundColor(ConsoleColor.brightRed)
       ..setForegroundColor(ConsoleColor.black)
@@ -231,7 +266,11 @@ class TerminalTestWriter implements TestWriter {
 
   @override
   void writeSummary() {
+    console.write('\n');
     stopwatch.stop();
+    for (var i = 0; i < failedResults.length; i++) {
+      _writeFailedTest(failedResults[i], failedInfos[i]);
+    }
     if (failed > 0) {
       console
         ..write('  ')
