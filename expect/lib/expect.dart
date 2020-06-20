@@ -14,7 +14,7 @@ export 'package:matcher/matcher.dart';
 /// [matcher] can be a value in which case it will be wrapped in an
 /// [equals] matcher.
 ///
-/// If the assertion fails a [TestFailure] is thrown.
+/// If the assertion fails a [String] is thrown.
 void expect(dynamic actual, dynamic matcher, {String reason}) {
   var wrappedMatcher = wrapMatcher(matcher);
   var matchState = <dynamic, dynamic>{};
