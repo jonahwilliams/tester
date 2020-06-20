@@ -181,6 +181,11 @@ class TerminalTestWriter implements TestWriter {
       ..writeLine(_indent(testResult.errorMessage, 2))
       ..writeLine();
 
+    if (testInfo.compatTest) {
+      console.writeLine();
+      return;
+    }
+
     var trace = Trace.parse(testResult.stackTrace);
     var testFrame = trace.frames.firstWhere(
       (Frame frame) {
