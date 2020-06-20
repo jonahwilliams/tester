@@ -43,7 +43,7 @@ void testLists() {
 }
 ```
 
-[WIP] tester may also be run in package:test compatibility mode. This allows tester to execute normal tests, to allow
+tester may also be run in package:test compatibility mode using `--test-compat-mode`. This allows tester to execute normal tests, to allow
 a gradual migration or mixed codebase.
 
 ### Test Concurrency
