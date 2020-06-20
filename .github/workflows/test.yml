@@ -19,7 +19,7 @@ jobs:
         run: ../../flutter/bin/dart pub get
         working-directory: tester/tester
       - name: Analyze
-        run: ../../flutter/bin/dart analyze .
+        run: ../../flutter/bin/dart analyze lib/
         working-directory: tester/tester
       - name: Format
         run: ../../flutter/bin/dart format --set-exit-if-changed .

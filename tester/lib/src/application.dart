@@ -31,6 +31,7 @@ void runApplication({
   @required List<String> enabledExperiments,
   @required bool soundNullSafety,
   @required bool debugger,
+  @required bool testCompatMode,
 }) async {
   if (!batchMode || (coverageOutputPath != null || debugger)) {
     concurrency = 1;
@@ -42,9 +43,11 @@ void runApplication({
     timeout: debugger ? -1 : timeout,
     soundNullSafety: soundNullSafety,
     enabledExperiments: enabledExperiments,
+    testCompatMode: testCompatMode,
   );
   var infoProvider = TestInformationProvider(
     config: config,
+    testCompatMode: testCompatMode,
   );
   var testCount = 0;
   var testInformation = <Uri, List<TestInfo>>{};
@@ -185,6 +188,7 @@ void runApplication({
     compiler: compiler,
     testIsolate: testIsolates.single,
     writer: writer,
+    testCompatMode: testCompatMode,
   );
   print('VM Service listening at ${testIsolates.single.vmServiceAddress}');
   await resident.start();

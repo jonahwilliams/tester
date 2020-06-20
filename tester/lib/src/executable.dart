@@ -69,6 +69,11 @@ final argParser = ArgParser()
         'launch the devtools debugger and pause each test to allow stepping. ',
     defaultsTo: false,
   )
+  ..addFlag(
+    'test-compat-mode',
+    help: 'Runs in compatibiltiy mode to support package:test declarations.',
+    defaultsTo: false,
+  )
   ..addOption('flutter-root',
       help: 'The path to the root of a flutter checkout.');
 
@@ -138,8 +143,7 @@ Future<void> main(List<String> args) async {
           .toList();
     }
   } else {
-    tests =
-        argResults.rest.map((String path) => File(path).absolute.uri).toList();
+    tests = globTests(argResults.rest);
   }
 
   var workspace =
@@ -171,5 +175,22 @@ Future<void> main(List<String> args) async {
     enabledExperiments: argResults['enable-experiment'] as List<String>,
     soundNullSafety: argResults['sound-null-safety'] as bool,
     debugger: argResults['debugger'] as bool,
+    testCompatMode: argResults['test-compat-mode'] as bool,
   );
+}
+
+List<Uri> globTests(List<String> inputs) {
+  List<Uri> recurse(String path) {
+    if (FileSystemEntity.isDirectorySync(path)) {
+      return Directory(path)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('_test.dart'))
+          .map((file) => file.uri)
+          .toList();
+    }
+    return <Uri>[File(path).uri];
+  }
+
+  return inputs.map(recurse).expand((element) => element).toList();
 }

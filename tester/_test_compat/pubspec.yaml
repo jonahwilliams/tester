@@ -1,0 +1,4 @@
+name: _test_compat
+
+dependencies:
+  test_api: 0.2.17

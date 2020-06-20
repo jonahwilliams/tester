@@ -71,6 +71,7 @@ Future<void> testDartVmCompile() async {
     timeout: -1,
     soundNullSafety: null,
     enabledExperiments: const <String>[],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
@@ -127,6 +128,7 @@ Future<void> testFlutterCompile() async {
     timeout: -1,
     soundNullSafety: null,
     enabledExperiments: const <String>[],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
@@ -183,6 +185,7 @@ Future<void> testDartWebCompile() async {
     timeout: -1,
     soundNullSafety: null,
     enabledExperiments: const <String>[],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
@@ -241,6 +244,7 @@ Future<void> testFlutterWebCompile() async {
     timeout: -1,
     soundNullSafety: null,
     enabledExperiments: const <String>[],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
@@ -302,6 +306,7 @@ Future<void> testDartVmCompileWithExperiments() async {
       'foo',
       'bar',
     ],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
@@ -358,6 +363,7 @@ Future<void> testDartVmCompileWithNullSafety() async {
     timeout: -1,
     soundNullSafety: true,
     enabledExperiments: const <String>[],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
@@ -414,6 +420,7 @@ Future<void> testDartVmCompileWithDisableNullSafety() async {
     timeout: -1,
     soundNullSafety: false,
     enabledExperiments: const <String>[],
+    testCompatMode: false,
   );
 
   var uri = await compiler.start({});
