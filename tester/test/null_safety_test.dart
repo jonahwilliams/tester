@@ -18,6 +18,7 @@ void testThatNullSafetyCompiles() async {
       tester,
       '--platform=dart',
       '--enable-experiment=non-nullable',
+      '--no-sound-null-safety',
       'test/null_safety_test.dart',
     ],
     workingDirectory: '../test_project',
