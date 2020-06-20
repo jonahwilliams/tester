@@ -1,5 +1,7 @@
 name: expect
-description: (WIP) A tiny expectation library for writing tests based on matcher and test.
+description: A tiny expectation library for writing tests based on matcher and test.
+version: 0.0.1
+repository: https://github.com/jonahwilliams/tester
 
 environment:
   sdk: '>=2.8.0 <3.0.0'
