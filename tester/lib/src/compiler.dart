@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:io' as io show Platform;
 
 import 'package:file/file.dart';
 import 'package:file/local.dart';
@@ -379,10 +380,19 @@ class Compiler {
       contents.writeln(
           'import "org-dartlang-app:///$relativePath" as i$importNumber;');
       importNumber += 1;
-      if (testCompatMode) {
-        contents.writeln(
-            'import "file:///Users/jonahwilliams/Documents/tester/tester/_test_compat/lib/_test_compat.dart";');
-      }
+    }
+    if (testCompatMode) {
+      var testCompatPath = fileSystem.path.join(
+        io.Platform.script.toFilePath(),
+        '..',
+        '..',
+        '..',
+        '_test_compat',
+        'lib',
+        '_test_compat.dart',
+      );
+      var testCompatUri = fileSystem.file(testCompatPath).uri;
+      contents.writeln('import "$testCompatUri";');
     }
     switch (compilerMode) {
       case TargetPlatform.dart:
