@@ -70,7 +70,6 @@ Future<void> main() {
     final result = await zone.run(() => executeTest(test, library));
     return ServiceExtensionResponse.result(json.encode(result));
   });
-  stdin.listen((_) { });
 }
 ''';
 
