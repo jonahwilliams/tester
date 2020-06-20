@@ -106,7 +106,6 @@ class TerminalTestWriter implements TestWriter {
   int passed = 0;
   int failed = 0;
   int lastUpdate = -1;
-  Coordinate _position;
 
   @override
   void writeHeader() {
@@ -116,7 +115,6 @@ class TerminalTestWriter implements TestWriter {
     failedInfos.clear();
     stopwatch.start();
     lastUpdate = 0;
-    _position = null;
   }
 
   @override
@@ -129,11 +127,6 @@ class TerminalTestWriter implements TestWriter {
       failed += 1;
     }
     if (stopwatch.elapsedMilliseconds - lastUpdate >= 16) {
-      if (_position == null) {
-        _position = console.cursorPosition;
-      } else {
-        console.cursorPosition = _position;
-      }
       console
         ..setBackgroundColor(ConsoleColor.yellow)
         ..setForegroundColor(ConsoleColor.black)
@@ -141,8 +134,8 @@ class TerminalTestWriter implements TestWriter {
         ..resetColorAttributes()
         ..setForegroundExtendedColor(_kGreyColor)
         ..write(' ${passed + failed}/ $testCount ')
-        ..resetColorAttributes();
-      console.cursorPosition;
+        ..resetColorAttributes()
+        ..write('\n');
       lastUpdate = stopwatch.elapsedMilliseconds;
     }
   }
