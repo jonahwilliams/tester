@@ -23,6 +23,29 @@ The tester can also be started in a resident process that re-runs when test file
 tester --watch
 ```
 
+### Writing Tests
+
+tester uses top-level declarations (beginning with "test") to declare test cases, with dartdoc providing additional context. It cannot use the `expect`
+function from package:test, but a similar declaration is available in package:expect [WIP].
+
+```dart
+import 'package:expect/expect.dart'; // Not yet available.
+
+void testFoo() {
+  // asserts are fine too
+  assert(foo() == true);
+}
+
+/// Here is a comment that will show up in test logs if it fails.
+void testLists() {
+  var xs = doThing();
+  expect(xs, [1, 2, 3]);
+}
+```
+
+[WIP] tester may also be run in package:test compatibility mode. This allows tester to execute normal tests, to allow
+a gradual migration or mixed codebase.
+
 ### Test Concurrency
 
 tester runs each test in serial. In batch mode, multiple runners can be configured using `--concurrency/-j`. Increasing this number above 1 (the default) will slow down startup times, but may be faster for large numbers of tests.
