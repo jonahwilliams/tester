@@ -18,7 +18,7 @@ import 'package:uuid/uuid.dart';
 import 'config.dart';
 import 'test_info.dart';
 
-String generateVmTestMain(int timeout) =>
+String generateVmTestMain(int timeout, bool testCompatMode) =>
     '''
 import 'dart:convert';
 import 'dart:async';
@@ -74,7 +74,7 @@ Future<void> main() {
 }
 ''';
 
-String generateFlutterWebTestMain(int timeout) =>
+String generateFlutterWebTestMain(int timeout, bool testCompatMode) =>
     '''
 import 'dart:convert';
 import 'dart:async';
@@ -125,7 +125,7 @@ Future<void> main() async {
 
 ''';
 
-String generateWebTestMain(int timeout) =>
+String generateWebTestMain(int timeout, bool testCompatMode) =>
     '''
 import 'dart:convert';
 import 'dart:async';
@@ -184,6 +184,7 @@ class Compiler {
     @required this.timeout,
     @required this.enabledExperiments,
     @required this.soundNullSafety,
+    @required this.testCompatMode,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
@@ -197,6 +198,7 @@ class Compiler {
   final int timeout;
   final List<String> enabledExperiments;
   final bool soundNullSafety;
+  final bool testCompatMode;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -377,26 +379,34 @@ class Compiler {
       contents.writeln(
           'import "org-dartlang-app:///$relativePath" as i$importNumber;');
       importNumber += 1;
+      if (testCompatMode) {
+        contents.writeln(
+            'import "file:///Users/jonahwilliams/Documents/tester/tester/_test_compat/lib/_test_compat.dart";');
+      }
     }
     switch (compilerMode) {
       case TargetPlatform.dart:
         contents.write(generateVmTestMain(
           timeout,
+          testCompatMode,
         ));
         break;
       case TargetPlatform.web:
         contents.write(generateWebTestMain(
           timeout,
+          testCompatMode,
         ));
         break;
       case TargetPlatform.flutter:
         contents.write(generateVmTestMain(
           timeout,
+          testCompatMode,
         ));
         break;
       case TargetPlatform.flutterWeb:
         contents.write(generateFlutterWebTestMain(
           timeout,
+          testCompatMode,
         ));
         break;
     }
@@ -404,10 +414,17 @@ class Compiler {
     for (var testFileUri in testInformation.keys) {
       contents.writeln('"${testFileUri}": {');
       for (var testInfo in testInformation[testFileUri]) {
-        contents.writeln(
-          '"${testInfo.name}": '
-          'i${importNumbers[testFileUri]}.${testInfo.name},',
-        );
+        if (testInfo.compatTest) {
+          contents.writeln(
+            '"${testInfo.name}": '
+            '() => testCompat(i${importNumbers[testFileUri]}.${testInfo.name}),',
+          );
+        } else {
+          contents.writeln(
+            '"${testInfo.name}": '
+            'i${importNumbers[testFileUri]}.${testInfo.name},',
+          );
+        }
       }
       contents.writeln('},');
     }

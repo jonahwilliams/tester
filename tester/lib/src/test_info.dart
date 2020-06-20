@@ -23,11 +23,13 @@ class TestInformationProvider {
     this.fileSystem = const LocalFileSystem(),
     this.platform = const LocalPlatform(),
     @required this.config,
+    @required this.testCompatMode,
   });
 
   final FileSystem fileSystem;
   final Platform platform;
   final Config config;
+  final bool testCompatMode;
 
   /// Collect all top-level methods that begin with 'test'.
   List<TestInfo> collectTestInfo(Uri testFileUri) {
@@ -62,6 +64,7 @@ class TestInformationProvider {
       firstToken,
       'org-dartlang-app:///$relativePath',
       offsetTable,
+      testCompatMode,
     );
     Parser(collector).parseUnit(firstToken);
     return collector.testInfo;
@@ -77,6 +80,7 @@ class TestInfo {
     this.multiRootUri,
     this.line,
     this.column,
+    this.compatTest,
   });
 
   final String name;
@@ -86,6 +90,7 @@ class TestInfo {
   final Token testToken;
   final int line;
   final int column;
+  final bool compatTest;
 }
 
 /// Collect the names of top level methods that begin with tests.
@@ -94,12 +99,18 @@ class TestInfo {
 /// include that as the test description.
 class TestNameCollector extends Listener {
   TestNameCollector(
-      this.testFileUri, this.testToken, this.multiRootUri, this.offsetTable);
+    this.testFileUri,
+    this.testToken,
+    this.multiRootUri,
+    this.offsetTable,
+    this.testCompatMode,
+  );
 
   final Uri testFileUri;
   final String multiRootUri;
   final Token testToken;
   final Map<int, int> offsetTable;
+  final bool testCompatMode;
 
   final testInfo = <TestInfo>[];
 
@@ -114,9 +125,15 @@ class TestNameCollector extends Listener {
       nameToken = nameToken.next;
     }
     var name = nameToken.toString();
-    if (!name.startsWith('test')) {
+    if (!name.startsWith('test') && (name != 'main')) {
       return;
     }
+
+    if (!testCompatMode && name == 'main') {
+      return;
+    }
+    var compatTest = name == 'main';
+
     // Check the previous token for a comment and include if  a doc comment `///`
     // is present.
     var description = StringBuffer();
@@ -135,6 +152,7 @@ class TestNameCollector extends Listener {
       testToken: testToken,
       multiRootUri: multiRootUri,
       line: offsetTable[beginToken.offset],
+      compatTest: compatTest,
     ));
   }
 }

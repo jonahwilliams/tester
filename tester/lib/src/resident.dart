@@ -28,7 +28,11 @@ class Resident {
     @required this.config,
     @required this.testIsolate,
     @required this.writer,
-  }) : infoProvider = TestInformationProvider(config: config);
+    @required bool testCompatMode,
+  }) : infoProvider = TestInformationProvider(
+          config: config,
+          testCompatMode: testCompatMode,
+        );
 
   final ProjectFileInvalidator projectFileInvalidator =
       ProjectFileInvalidator();
