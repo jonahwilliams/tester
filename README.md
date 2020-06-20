@@ -26,10 +26,10 @@ tester --watch
 ### Writing Tests
 
 tester uses top-level declarations (beginning with "test") to declare test cases, with dartdoc providing additional context. It cannot use the `expect`
-function from package:test, but a similar declaration is available in package:expect [WIP].
+function from package:test, but a similar declaration is available in package:expect.
 
 ```dart
-import 'package:expect/expect.dart'; // Not yet available.
+import 'package:expect/expect.dart';
 
 void testFoo() {
   // asserts are fine too
