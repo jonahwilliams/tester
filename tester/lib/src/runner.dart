@@ -145,6 +145,7 @@ class FlutterTestRunner extends TestRunner {
       '--enable-dart-profiling',
       '--non-interactive',
       '--use-test-fonts',
+      '--run-forever',
       entrypoint.toFilePath(),
     ]);
     unawaited(_process.exitCode.whenComplete(() {

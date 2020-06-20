@@ -37,7 +37,7 @@ SET program_entrypoint="package:tester/src/executable.dart"
         ECHO precompiling tester snapshot...
         PUSHD "%TESTER_ROOT%"
 
-        CALL dart pub get --no-precompile > nul
+        CALL dart pub get --no-precompile > NUL
         CALL dart --disable-dart-dev --snapshot="%snapshot_path%" ^
             --snapshot-kind=app-jit --packages="%package_config%" ^
             --no-enable-mirrors "%program_entrypoint%" --no-debugger ^

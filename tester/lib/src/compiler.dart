@@ -26,8 +26,15 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
 
-Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
-  var testFunction = testRegistry[libraryUri][name];
+Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
+  var libraryTests = testRegistry[libraryUri];
+  if (libraryTests == null) {
+     throw Exception();
+  }
+  var testFunction = libraryTests[name];
+  if (testFunction == null) {
+    throw Exception();
+  }
 
   var passed = false;
   var timeout = false;
@@ -47,17 +54,17 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
       timeout = true;
     }
   } finally {
-    return <String, Object>{
+    return {
       'test': name,
       'passed': passed,
       'timeout': timeout,
-      'error': error?.toString(),
-      'stackTrace': stackTrace?.toString(),
+      'error': error.toString(),
+      'stackTrace': stackTrace.toString(),
     };
   }
 }
 
-Future<void> main() {
+main() {
   var zone = Zone.current.fork(
     specification: ZoneSpecification(
       print: (self, parent, zone, line) {
@@ -68,10 +75,12 @@ Future<void> main() {
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
+    if (library == null || test == null) {
+      return ServiceExtensionResponse.result(json.encode({}));
+    }
     final result = await zone.run(() => executeTest(test, library));
     return ServiceExtensionResponse.result(json.encode(result));
   });
-  stdin.listen((_) { });
 }
 ''';
 
@@ -82,8 +91,15 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:ui' as ui;
 
-Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
-  var testFunction = testRegistry[libraryUri][name];
+Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
+  var libraryTests = testRegistry[libraryUri];
+  if (libraryTests == null) {
+     throw Exception();
+  }
+  var testFunction = libraryTests[name];
+  if (testFunction == null) {
+    throw Exception();
+  }
 
   var passed = false;
   var timeout = false;
@@ -104,20 +120,23 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
       timeout = true;
     }
   } finally {
-    return <String, Object>{
+    return {
       'test': name,
       'passed': passed,
       'timeout': timeout,
-      'error': error?.toString(),
-      'stackTrace': stackTrace?.toString(),
+      'error': error.toString(),
+      'stackTrace': stackTrace.toString(),
     };
   }
 }
 
-Future<void> main() async {
+main() async {
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
+    if (library == null || test == null) {
+      return ServiceExtensionResponse.result(json.encode({}));
+    }
     final result = await executeTest(test, library);
     return ServiceExtensionResponse.result(json.encode(result));
   });
@@ -132,8 +151,15 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:developer';
 
-Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
-  var testFunction = testRegistry[libraryUri][name];
+Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
+  var libraryTests = testRegistry[libraryUri];
+  if (libraryTests == null) {
+     throw Exception();
+  }
+  var testFunction = libraryTests[name];
+  if (testFunction == null) {
+    throw Exception();
+  }
 
   var passed = false;
   var timeout = false;
@@ -154,20 +180,23 @@ Future<Map<String, Object>> executeTest(String name, String libraryUri) async {
       timeout = true;
     }
   } finally {
-    return <String, Object>{
+    return {
       'test': name,
       'passed': passed,
       'timeout': timeout,
-      'error': error?.toString(),
-      'stackTrace': stackTrace?.toString(),
+      'error': error.toString(),
+      'stackTrace': stackTrace.toString(),
     };
   }
 }
 
-Future<void> main() async {
+main() async {
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
+    if (library == null || test == null) {
+      return ServiceExtensionResponse.result(json.encode({}));
+    }
     final result = await executeTest(test, library);
     return ServiceExtensionResponse.result(json.encode(result));
   });
