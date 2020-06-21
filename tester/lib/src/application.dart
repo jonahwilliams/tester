@@ -165,14 +165,18 @@ void runApplication({
     if (coverageOutputPath != null) {
       var packagesPath = const LocalFileSystem()
           .path
-          .join(config.packageRootPath, '.dart_tool', 'package_config.json');
+          .join(config.packageRootPath, '.packages');
       print('Collecting coverage data...');
       await coverage.collectCoverageIsolate(testIsolates.single.vmService,
           (String libraryName) => libraryName.contains(appName), packagesPath);
-      await coverage.writeCoverageData(
-        coverageOutputPath,
-        packagesPath: packagesPath,
-      );
+      try {
+        await coverage.writeCoverageData(
+          coverageOutputPath,
+          packagesPath: packagesPath,
+        );
+      } catch (err) {
+        print('Failed to collect coverage data: $err');
+      }
     }
     for (var testIsolate in testIsolates) {
       testIsolate.dispose();
