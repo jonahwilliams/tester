@@ -69,6 +69,9 @@ main() {
       print: (self, parent, zone, line) {
         log(line);
       },
+      handleUncaughtError: (self, parent, zone, error, stackTrace) {
+        log('UNHANDLED EXCEPTION: \$error\\n\$stackTrace\\n');
+      },
     ),
   );
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {

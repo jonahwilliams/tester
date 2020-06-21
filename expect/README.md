@@ -1,1 +1,1 @@
-A tiny expectation library for writing tests based on matcher and test.
+A tiny expectation library for writing tests based on matcher and test. Supports running outside of a package:test declaraton.
