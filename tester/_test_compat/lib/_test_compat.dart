@@ -140,13 +140,10 @@ class _Reporter {
     if (failed.isNotEmpty) {
       var buffer = StringBuffer();
       for (var fail in failed) {
-        buffer.write('FAILURES:');
         buffer.write(_description(fail));
         var errors = failedErrors[fail] ?? <dynamic>[];
-        var stackTraces = failedStackTraces[fail] ?? <dynamic>[];
         for (var i = 0; i < errors.length; i++) {
           buffer.writeln(errors[i]);
-          buffer.writeln(stackTraces[i]);
         }
       }
       return buffer.toString();

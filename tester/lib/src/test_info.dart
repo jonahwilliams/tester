@@ -76,7 +76,6 @@ class TestInfo {
     this.name,
     this.description,
     this.testFileUri,
-    this.testToken,
     this.multiRootUri,
     this.line,
     this.column,
@@ -87,7 +86,6 @@ class TestInfo {
   final String description;
   final Uri testFileUri;
   final String multiRootUri;
-  final Token testToken;
   final int line;
   final int column;
   final bool compatTest;
@@ -149,7 +147,6 @@ class TestNameCollector extends Listener {
       name: name,
       description: description.toString(),
       testFileUri: testFileUri,
-      testToken: testToken,
       multiRootUri: multiRootUri,
       line: offsetTable[beginToken.offset],
       compatTest: compatTest,
