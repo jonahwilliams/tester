@@ -118,7 +118,9 @@ class _Reporter {
         .listen((State state) => _onStateChange(liveTest, state)));
     _subscriptions.add(liveTest.onError.listen((AsyncError error) =>
         _onError(liveTest, error.error, error.stackTrace)));
-    _subscriptions.add(liveTest.onMessage.listen((Message message) {}));
+    _subscriptions.add(liveTest.onMessage.listen((Message message) {
+      print(message.text);
+    }));
   }
 
   void _onStateChange(LiveTest liveTest, State state) {
@@ -144,6 +146,8 @@ class _Reporter {
         var errors = failedErrors[fail] ?? <dynamic>[];
         for (var i = 0; i < errors.length; i++) {
           buffer.writeln(errors[i]);
+          buffer.write('  ');
+          buffer.writeln(failedStackTraces[fail][i]);
         }
       }
       return buffer.toString();
