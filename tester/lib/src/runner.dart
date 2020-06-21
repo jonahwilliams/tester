@@ -166,6 +166,7 @@ class FlutterTestRunner extends TestRunner {
       serviceInfo.complete(Uri.parse(match[1]));
       subscription.cancel();
     });
+    unawaited(stderr.addStream(_process.stderr));
 
     return RunnerStartResult(
         isolateName: '', serviceUri: await serviceInfo.future);
