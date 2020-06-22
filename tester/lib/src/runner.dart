@@ -147,7 +147,9 @@ class FlutterTestRunner extends TestRunner {
       '--use-test-fonts',
       '--run-forever',
       entrypoint.toFilePath(),
-    ]);
+    ], environment: <String, String>{
+      'FLUTTER_TEST': 'true',
+    });
     unawaited(_process.exitCode.whenComplete(() {
       if (!_disposed) {
         onExit();
