@@ -6,6 +6,9 @@ authors:
 environment:
   sdk: '>=2.8.0 <3.0.0'
 
+executables:
+  tester: tester
+
 dependencies:
   devtools_server: 0.2.5
   devtools: 0.2.5
