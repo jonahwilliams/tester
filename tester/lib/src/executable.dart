@@ -69,11 +69,6 @@ final argParser = ArgParser()
         'launch the devtools debugger and pause each test to allow stepping. ',
     defaultsTo: false,
   )
-  ..addFlag(
-    'test-compat-mode',
-    help: 'Runs in compatibiltiy mode to support package:test declarations.',
-    defaultsTo: false,
-  )
   ..addOption('flutter-root',
       help: 'The path to the root of a flutter checkout.');
 
@@ -166,7 +161,6 @@ Future<void> main(List<String> args) async {
     enabledExperiments: argResults['enable-experiment'] as List<String>,
     soundNullSafety: argResults['sound-null-safety'] as bool,
     debugger: argResults['debugger'] as bool,
-    testCompatMode: argResults['test-compat-mode'] as bool,
     targetPlatform: TargetPlatform
         .values[_allowedPlatforms.indexOf(argResults['platform'] as String)],
     workspacePath: workspace.path,

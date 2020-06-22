@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
 import 'package:devtools_server/devtools_server.dart' as devtools_server;
+import 'package:package_config/package_config.dart';
 
 import 'coverage.dart';
 import 'test_info.dart';
@@ -31,7 +32,6 @@ void runApplication({
   @required List<String> enabledExperiments,
   @required bool soundNullSafety,
   @required bool debugger,
-  @required bool testCompatMode,
   @required TargetPlatform targetPlatform,
   @required List<Uri> tests,
   @required String packagesRootPath,
@@ -40,6 +40,13 @@ void runApplication({
   if (!batchMode || (coverageOutputPath != null || debugger)) {
     concurrency = 1;
   }
+  var fileSystem = const LocalFileSystem();
+  var packagesUri = fileSystem
+      .file(fileSystem.path.join(packagesRootPath, '.packages'))
+      .absolute
+      .uri;
+  var packageConfig = await loadPackageConfigUri(packagesUri);
+  var testCompatMode = packageConfig['test_api'] != null;
   var coverage = CoverageService();
   var compiler = Compiler(
     config: config,
@@ -47,9 +54,11 @@ void runApplication({
     timeout: debugger ? -1 : timeout,
     soundNullSafety: soundNullSafety,
     enabledExperiments: enabledExperiments,
-    testCompatMode: testCompatMode,
+    packageConfig: packageConfig,
     workspacePath: workspacePath,
     packagesRootPath: packagesRootPath,
+    testCompatMode: testCompatMode,
+    packagesUri: packagesUri,
   );
   var infoProvider = TestInformationProvider(
     config: config,
