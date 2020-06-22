@@ -1,7 +1,7 @@
 name: tester
 version: 0.0.1
-authors:
-  - Jonah Williams <jonahwilliams@google.com>
+repository: https://github.com/jonahwilliams/tester
+description: An experimental test framework for Dart & Flutter.
 
 environment:
   sdk: '>=2.8.0 <3.0.0'
@@ -10,6 +10,7 @@ executables:
   tester: tester
 
 dependencies:
+  meta: 1.1.8
   devtools_server: 0.2.5
   devtools: 0.2.5
   yaml: 2.2.1
