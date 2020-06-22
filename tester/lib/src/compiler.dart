@@ -390,10 +390,12 @@ class Compiler {
     @required this.testCompatMode,
     @required this.workspacePath,
     @required this.packagesRootPath,
+    @required this.packagesUri,
+    @required PackageConfig packageConfig,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
-  });
+  }) : _packageConfig = packageConfig;
 
   final FileSystem fileSystem;
   final ProcessManager processManager;
@@ -406,13 +408,14 @@ class Compiler {
   final bool testCompatMode;
   final String workspacePath;
   final String packagesRootPath;
+  final Uri packagesUri;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
   StdoutHandler _stdoutHandler;
   Process _frontendServer;
   File _mainFile;
-  PackageConfig _packageConfig;
+  final PackageConfig _packageConfig;
 
   DateTime get lastCompiled => _lastCompiledTime;
 
@@ -424,17 +427,6 @@ class Compiler {
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
-    var packagesUri = fileSystem
-        .file(fileSystem.path.join(packagesRootPath, '.packages'))
-        .absolute
-        .uri;
-    _packageConfig = await loadPackageConfigUri(packagesUri, loader: (Uri uri) {
-      var file = fileSystem.file(uri);
-      if (file.existsSync()) {
-        return file.readAsBytes();
-      }
-      return null;
-    });
     var package = testInformation.isNotEmpty
         ? _packageConfig.packageOf(testInformation.keys.first)
         : null;
