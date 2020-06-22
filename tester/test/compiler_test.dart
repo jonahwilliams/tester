@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:file/file.dart';
 import 'package:file/memory.dart';
+import 'package:package_config/package_config.dart';
 import 'package:tester/src/compiler.dart';
 import 'package:tester/src/config.dart';
 import 'package:expect/expect.dart';
@@ -71,6 +72,8 @@ Future<void> testDartVmCompile() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});
@@ -130,6 +133,8 @@ Future<void> testFlutterCompile() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});
@@ -189,6 +194,8 @@ Future<void> testDartWebCompile() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});
@@ -250,6 +257,8 @@ Future<void> testFlutterWebCompile() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});
@@ -314,6 +323,8 @@ Future<void> testDartVmCompileWithExperiments() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});
@@ -373,6 +384,8 @@ Future<void> testDartVmCompileWithNullSafety() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});
@@ -432,6 +445,8 @@ Future<void> testDartVmCompileWithDisableNullSafety() async {
     testCompatMode: false,
     packagesRootPath: '/project',
     workspacePath: '/project',
+    packageConfig: PackageConfig.empty,
+    packagesUri: Uri.file('/project/.packages'),
   );
 
   var uri = await compiler.start({});

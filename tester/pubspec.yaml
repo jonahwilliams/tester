@@ -6,6 +6,9 @@ description: An experimental test framework for Dart & Flutter.
 environment:
   sdk: '>=2.8.0 <3.0.0'
 
+executables:
+  tester: tester
+
 dependencies:
   meta: 1.1.8
   devtools_server: 0.2.5
