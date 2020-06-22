@@ -24,11 +24,13 @@ class TestInformationProvider {
     this.platform = const LocalPlatform(),
     @required this.config,
     @required this.testCompatMode,
+    @required this.packagesRootPath,
   });
 
   final FileSystem fileSystem;
   final Platform platform;
   final Config config;
+  final String packagesRootPath;
   final bool testCompatMode;
 
   /// Collect all top-level methods that begin with 'test'.
@@ -37,7 +39,7 @@ class TestInformationProvider {
     var relativePath = fileSystem
         .file(fileSystem.path.relative(
           testUri,
-          from: config.packageRootPath,
+          from: packagesRootPath,
         ))
         .uri;
     var rawBytes = fileSystem.file(testUri).readAsBytesSync();

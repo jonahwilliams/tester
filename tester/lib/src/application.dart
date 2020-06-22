@@ -32,6 +32,10 @@ void runApplication({
   @required bool soundNullSafety,
   @required bool debugger,
   @required bool testCompatMode,
+  @required TargetPlatform targetPlatform,
+  @required List<Uri> tests,
+  @required String packagesRootPath,
+  @required String workspacePath,
 }) async {
   if (!batchMode || (coverageOutputPath != null || debugger)) {
     concurrency = 1;
@@ -39,19 +43,22 @@ void runApplication({
   var coverage = CoverageService();
   var compiler = Compiler(
     config: config,
-    compilerMode: config.targetPlatform,
+    compilerMode: targetPlatform,
     timeout: debugger ? -1 : timeout,
     soundNullSafety: soundNullSafety,
     enabledExperiments: enabledExperiments,
     testCompatMode: testCompatMode,
+    workspacePath: workspacePath,
+    packagesRootPath: packagesRootPath,
   );
   var infoProvider = TestInformationProvider(
     config: config,
     testCompatMode: testCompatMode,
+    packagesRootPath: packagesRootPath,
   );
   var testCount = 0;
   var testInformation = <Uri, List<TestInfo>>{};
-  for (var testFileUri in config.tests) {
+  for (var testFileUri in tests) {
     var infos = infoProvider.collectTestInfo(testFileUri);
     testCount += infos.length;
     testInformation[testFileUri] = infos;
@@ -66,11 +73,20 @@ void runApplication({
   var loadingIsolates = <Future<void>>[];
   for (var i = 0; i < concurrency; i++) {
     TestIsolate testIsolate;
-    switch (config.targetPlatform) {
-      // Use the flutter tester platform for VM tests to improve performance.
-      // The set of supported libraries is almost the same, except for mirrors
-      // which is not worth supporting.
+    switch (targetPlatform) {
       case TargetPlatform.dart:
+        // Use the flutter tester platform for VM tests to improve performance.
+        // The set of supported libraries is almost the same, except for mirrors
+        // which is not worth supporting.
+        if (config.flutterTesterPath != null) {
+          continue flutter;
+        }
+        var testRunner = VmTestRunner(
+          dartExecutable: config.dartPath,
+        );
+        testIsolate = VmTestIsolate(testRunner: testRunner);
+        break;
+      flutter:
       case TargetPlatform.flutter:
         var testRunner = FlutterTestRunner(
           flutterTesterPath: config.flutterTesterPath,
@@ -84,6 +100,7 @@ void runApplication({
           stackTraceMapper: File(config.stackTraceMapper),
           requireJS: File(config.requireJS),
           config: config,
+          packagesRootPath: packagesRootPath,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;
@@ -93,6 +110,7 @@ void runApplication({
           dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
           stackTraceMapper: File(config.stackTraceMapper),
           requireJS: File(config.requireJS),
+          packagesRootPath: packagesRootPath,
           config: config,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
@@ -110,7 +128,7 @@ void runApplication({
   await Future.wait(loadingIsolates);
 
   var writer = TestWriter(
-    projectRoot: config.packageRootPath,
+    projectRoot: packagesRootPath,
     verbose: verbose,
     ci: ci,
     testCount: testCount,
@@ -163,9 +181,8 @@ void runApplication({
 
     writer.writeSummary();
     if (coverageOutputPath != null) {
-      var packagesPath = const LocalFileSystem()
-          .path
-          .join(config.packageRootPath, '.packages');
+      var packagesPath =
+          const LocalFileSystem().path.join(packagesRootPath, '.packages');
       print('Collecting coverage data...');
       await coverage.collectCoverageIsolate(testIsolates.single.vmService,
           (String libraryName) => libraryName.contains(appName), packagesPath);
@@ -193,6 +210,8 @@ void runApplication({
     testIsolate: testIsolates.single,
     writer: writer,
     testCompatMode: testCompatMode,
+    packagesRootPath: packagesRootPath,
+    tests: tests,
   );
   print('VM Service listening at ${testIsolates.single.vmServiceAddress}');
   await resident.start();

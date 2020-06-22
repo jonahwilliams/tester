@@ -27,6 +27,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     @required this.stackTraceMapper,
     @required this.requireJS,
     @required this.config,
+    @required this.packagesRootPath,
   });
 
   /// The expected executable name on linux.
@@ -59,6 +60,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   final File dartSdkSourcemap;
   final File stackTraceMapper;
   final File requireJS;
+  final String packagesRootPath;
   final modules = <String, String>{};
   final digests = <String, String>{};
   final files = <String, Uint8List>{};
@@ -274,8 +276,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   @override
   Future<String> dartSourceContents(String serverPath) async {
     if (!serverPath.endsWith('.dart')) return null;
-    return File(path.join(config.packageRootPath, serverPath))
-        .readAsStringSync();
+    return File(path.join(packagesRootPath, serverPath)).readAsStringSync();
   }
 
   @override

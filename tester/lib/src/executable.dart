@@ -99,21 +99,16 @@ Future<void> main(List<String> args) async {
   } else if (Platform.environment['FLUTTER_ROOT'] != null) {
     flutterRoot = path.normalize(Platform.environment['FLUTTER_ROOT']);
   } else if (Platform.isWindows) {
-    flutterRoot = File((await Process.run('where', <String>['flutter']))
-            .stdout
-            .split('\n')
-            .first as String)
-        .parent
-        .parent
-        .path;
-  } else {
-    flutterRoot = File((await Process.run('which', <String>['flutter']))
-            .stdout
-            .split('\n')
-            .first as String)
-        .parent
-        .parent
-        .path;
+    try {
+      var dartExecutable = File(Platform.resolvedExecutable);
+      var candidateFlutterRoot =
+          dartExecutable.parent.parent.parent.parent.parent;
+      if (candidateFlutterRoot.existsSync()) {
+        flutterRoot = candidateFlutterRoot.path;
+      }
+    } on FileSystemException {
+      // Do nothing, flutter was not located.
+    }
   }
 
   String cacheName;
@@ -153,10 +148,6 @@ Future<void> main(List<String> args) async {
   }
 
   var config = Config(
-    targetPlatform: TargetPlatform
-        .values[_allowedPlatforms.indexOf(argResults['platform'] as String)],
-    workspacePath: workspace.path,
-    packageRootPath: Directory(projectDirectory).absolute.path,
     tests: tests,
     cacheName: cacheName,
     flutterRoot: flutterRoot,
@@ -176,6 +167,11 @@ Future<void> main(List<String> args) async {
     soundNullSafety: argResults['sound-null-safety'] as bool,
     debugger: argResults['debugger'] as bool,
     testCompatMode: argResults['test-compat-mode'] as bool,
+    targetPlatform: TargetPlatform
+        .values[_allowedPlatforms.indexOf(argResults['platform'] as String)],
+    workspacePath: workspace.path,
+    packagesRootPath: Directory(projectDirectory).absolute.path,
+    tests: tests,
   );
 }
 

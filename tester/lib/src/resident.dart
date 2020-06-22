@@ -29,37 +29,38 @@ class Resident {
     @required this.testIsolate,
     @required this.writer,
     @required bool testCompatMode,
+    @required this.tests,
+    @required this.packagesRootPath,
   }) : infoProvider = TestInformationProvider(
           config: config,
           testCompatMode: testCompatMode,
+          packagesRootPath: packagesRootPath,
         );
 
-  final ProjectFileInvalidator projectFileInvalidator =
-      ProjectFileInvalidator();
+  final projectFileInvalidator = ProjectFileInvalidator();
   final Console console = Console();
   final Compiler compiler;
   final Config config;
   final TestIsolate testIsolate;
   final TestWriter writer;
   final TestInformationProvider infoProvider;
+  final List<Uri> tests;
+  final String packagesRootPath;
+
   Map<Uri, List<TestInfo>> testInformation;
 
   Future<void> start() async {
     testInformation = <Uri, List<TestInfo>>{};
-    for (var testFileUri in config.tests) {
+    for (var testFileUri in tests) {
       testInformation[testFileUri] = infoProvider.collectTestInfo(testFileUri);
     }
 
     var pendingTest = false;
     var controller = StreamController<WatchEvent>();
-    if (Directory(path.join(config.packageRootPath, 'lib')).existsSync()) {
-      Watcher(path.join(config.packageRootPath, 'lib'))
-          .events
-          .listen(controller.add);
+    if (Directory(path.join(packagesRootPath, 'lib')).existsSync()) {
+      Watcher(path.join(packagesRootPath, 'lib')).events.listen(controller.add);
     }
-    Watcher(path.join(config.packageRootPath, 'test'))
-        .events
-        .listen(controller.add);
+    Watcher(path.join(packagesRootPath, 'test')).events.listen(controller.add);
     controller.stream
         .debounce(const Duration(milliseconds: 100))
         .listen((WatchEvent event) async {
@@ -69,12 +70,11 @@ class Resident {
       if (pendingTest) {
         return;
       }
-      if (path.isWithin(path.join(config.packageRootPath, 'lib'), event.path)) {
+      if (path.isWithin(path.join(packagesRootPath, 'lib'), event.path)) {
         var invalidated = await projectFileInvalidator.findInvalidated(
           lastCompiled: compiler.lastCompiled,
           urisToMonitor: compiler.dependencies,
-          packagesUri:
-              Directory(path.join(config.packageRootPath, '.packages')).uri,
+          packagesUri: Directory(path.join(packagesRootPath, '.packages')).uri,
         );
         if (invalidated.isEmpty) {
           return;
@@ -106,8 +106,7 @@ class Resident {
       var invalidated = await projectFileInvalidator.findInvalidated(
         lastCompiled: compiler.lastCompiled,
         urisToMonitor: compiler.dependencies,
-        packagesUri:
-            Directory(path.join(config.packageRootPath, '.packages')).uri,
+        packagesUri: Directory(path.join(packagesRootPath, '.packages')).uri,
       );
       if (invalidated.isEmpty) {
         return;
