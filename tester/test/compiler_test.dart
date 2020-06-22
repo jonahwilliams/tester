@@ -17,10 +17,7 @@ Config createTestConfig(FileSystem fileSystem, TargetPlatform targetPlatform) {
   return Config(
     cacheName: 'linux-x64',
     flutterRoot: '/flutter',
-    packageRootPath: '/project',
-    targetPlatform: targetPlatform,
     tests: [Uri.file('/project/test/a_test.dart')],
-    workspacePath: '/project',
     fileSystem: fileSystem,
   );
 }
@@ -72,6 +69,8 @@ Future<void> testDartVmCompile() async {
     soundNullSafety: null,
     enabledExperiments: const <String>[],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});
@@ -129,6 +128,8 @@ Future<void> testFlutterCompile() async {
     soundNullSafety: null,
     enabledExperiments: const <String>[],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});
@@ -186,6 +187,8 @@ Future<void> testDartWebCompile() async {
     soundNullSafety: null,
     enabledExperiments: const <String>[],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});
@@ -245,6 +248,8 @@ Future<void> testFlutterWebCompile() async {
     soundNullSafety: null,
     enabledExperiments: const <String>[],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});
@@ -307,6 +312,8 @@ Future<void> testDartVmCompileWithExperiments() async {
       'bar',
     ],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});
@@ -364,6 +371,8 @@ Future<void> testDartVmCompileWithNullSafety() async {
     soundNullSafety: true,
     enabledExperiments: const <String>[],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});
@@ -421,6 +430,8 @@ Future<void> testDartVmCompileWithDisableNullSafety() async {
     soundNullSafety: false,
     enabledExperiments: const <String>[],
     testCompatMode: false,
+    packagesRootPath: '/project',
+    workspacePath: '/project',
   );
 
   var uri = await compiler.start({});

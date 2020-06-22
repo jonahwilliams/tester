@@ -83,6 +83,7 @@ main() {
     final result = await zone.run(() => executeTest(test, library));
     return ServiceExtensionResponse.result(json.encode(result));
   });
+  stdin.listen((_) {});
 }
 ''';
 
@@ -387,6 +388,8 @@ class Compiler {
     @required this.enabledExperiments,
     @required this.soundNullSafety,
     @required this.testCompatMode,
+    @required this.workspacePath,
+    @required this.packagesRootPath,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
@@ -401,6 +404,8 @@ class Compiler {
   final List<String> enabledExperiments;
   final bool soundNullSafety;
   final bool testCompatMode;
+  final String workspacePath;
+  final String packagesRootPath;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -415,12 +420,12 @@ class Compiler {
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
   Future<Uri> start(Map<Uri, List<TestInfo>> testInformation) async {
-    var workspace = fileSystem.directory(config.workspacePath);
+    var workspace = fileSystem.directory(workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
     var packagesUri = fileSystem
-        .file(fileSystem.path.join(config.packageRootPath, '.packages'))
+        .file(fileSystem.path.join(packagesRootPath, '.packages'))
         .absolute
         .uri;
     _packageConfig = await loadPackageConfigUri(packagesUri, loader: (Uri uri) {
@@ -440,7 +445,7 @@ class Compiler {
 
     var dillOutput = fileSystem
         .file(fileSystem.path
-            .join(config.workspacePath, 'main.${compilerMode}.dart.dill'))
+            .join(workspacePath, 'main.${compilerMode}.dart.dill'))
         .absolute;
 
     _stdoutHandler = StdoutHandler();
@@ -456,9 +461,9 @@ class Compiler {
       '--output-dill=${dillOutput.path}',
       '--incremental',
       '--filesystem-root',
-      fileSystem.file(config.workspacePath).parent.absolute.path,
+      fileSystem.file(workspacePath).parent.absolute.path,
       '--filesystem-root',
-      fileSystem.path.join(config.packageRootPath),
+      fileSystem.path.join(packagesRootPath),
       '--filesystem-scheme',
       'org-dartlang-app',
       if (soundNullSafety == true) '--null-safety',
@@ -505,7 +510,7 @@ class Compiler {
       var relativePath = fileSystem
           .file(fileSystem.path.relative(
             uri.toFilePath(windows: platform.isWindows),
-            from: config.packageRootPath,
+            from: packagesRootPath,
           ))
           .uri;
       _frontendServer.stdin.writeln('org-dartlang-app:///$relativePath');
@@ -575,7 +580,7 @@ class Compiler {
       var relativePath = fileSystem
           .file(fileSystem.path.relative(
             testFileUri.toFilePath(windows: platform.isWindows),
-            from: config.packageRootPath,
+            from: packagesRootPath,
           ))
           .uri;
       contents.writeln(
