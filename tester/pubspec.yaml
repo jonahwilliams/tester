@@ -4,7 +4,7 @@ repository: https://github.com/jonahwilliams/tester
 description: An experimental test framework for Dart & Flutter.
 
 environment:
-  sdk: '>=2.8.0 <3.0.0'
+  sdk: '>=2.9.0-17.0.dev <3.0.0'
 
 executables:
   tester: tester
