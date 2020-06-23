@@ -84,7 +84,7 @@ packages:
       name: dart_console
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.0"
+    version: "0.6.1"
   devtools:
     dependency: "direct main"
     description:
@@ -387,12 +387,12 @@ packages:
     source: hosted
     version: "0.7.3"
   win32:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.0"
+    version: "1.6.3"
   yaml:
     dependency: "direct main"
     description:

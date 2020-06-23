@@ -1,3 +1,3 @@
-v0.0.1
+v0.0.1-dev4
 
-* Initial version
+* Pre-release version for initial testing

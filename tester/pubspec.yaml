@@ -1,5 +1,5 @@
 name: tester
-version: 0.0.1-dev3
+version: 0.0.1-dev4
 repository: https://github.com/jonahwilliams/tester
 description: An experimental test framework for Dart & Flutter.
 
@@ -19,7 +19,8 @@ dependencies:
   stream_transform: 1.2.0
   watcher: '0.9.7+15'
   stack_trace: 1.9.3
-  dart_console: 0.6.0
+  win32: 1.6.3
+  dart_console: 0.6.1
   vm_service: 4.1.0
   package_config: 1.9.3
   uuid: 2.1.0
