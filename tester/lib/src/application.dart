@@ -82,18 +82,11 @@ void runApplication({
     TestIsolate testIsolate;
     switch (targetPlatform) {
       case TargetPlatform.dart:
-        // Use the flutter tester platform for VM tests to improve performance.
-        // The set of supported libraries is almost the same, except for mirrors
-        // which is not worth supporting.
-        if (config.flutterTesterPath != null) {
-          continue flutter;
-        }
         var testRunner = VmTestRunner(
           dartExecutable: config.dartPath,
         );
         testIsolate = VmTestIsolate(testRunner: testRunner);
         break;
-      flutter:
       case TargetPlatform.flutter:
         var testRunner = FlutterTestRunner(
           flutterTesterPath: config.flutterTesterPath,
@@ -169,7 +162,7 @@ void runApplication({
         (() async {
           while (testOrder.isNotEmpty) {
             var nextTest = testOrder.removeLast();
-            var testResult = await testIsolates[i].runTest(nextTest, debugger);
+            var testResult = await testIsolates[i].runTest(nextTest);
             writer.writeTest(testResult, nextTest);
           }
         })()

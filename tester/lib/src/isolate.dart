@@ -24,7 +24,7 @@ abstract class TestIsolate {
   FutureOr<void> dispose();
 
   /// Execute [testInfo]
-  Future<TestResult> runTest(TestInfo testInfo, bool debugging);
+  Future<TestResult> runTest(TestInfo testInfo);
 
   /// Reload the application with the incremental file defined at `incrementalDill`.
   Future<void> reload(Uri incrementalDill);
@@ -45,7 +45,6 @@ class VmTestIsolate extends TestIsolate {
   final TestRunner _testRunner;
   IsolateRef _testIsolateRef;
   VmService _vmService;
-  ScriptList _scripts;
 
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
@@ -60,10 +59,10 @@ class VmTestIsolate extends TestIsolate {
         (element) => element.name.contains(launchResult.isolateName));
     var isolate = await _vmService.getIsolate(_testIsolateRef.id);
     if (isolate.pauseEvent == null ||
-        isolate.pauseEvent.kind != EventKind.kResume) {
+        (isolate.pauseEvent.kind != EventKind.kResume &&
+            isolate.pauseEvent.kind != EventKind.kNone)) {
       await _vmService.resume(isolate.id);
     }
-    _scripts = await _vmService.getScripts(_testIsolateRef.id);
 
     await Future.wait([
       _vmService.streamListen(EventStreams.kLogging),
@@ -82,18 +81,9 @@ class VmTestIsolate extends TestIsolate {
   }
 
   @override
-  Future<TestResult> runTest(TestInfo testInfo, bool debugger) async {
+  Future<TestResult> runTest(TestInfo testInfo) async {
     Map<String, Object> result;
     try {
-      if (debugger) {
-        await _vmService.addBreakpoint(
-          _testIsolateRef.id,
-          _scripts.scripts
-              .firstWhere((script) => script.uri == testInfo.multiRootUri)
-              .id,
-          testInfo.line + 1,
-        );
-      }
       result = (await _vmService.callServiceExtension(
         'ext.callTest',
         isolateId: _testIsolateRef.id,
@@ -143,7 +133,6 @@ class WebTestIsolate extends TestIsolate {
   final ChromeTestRunner testRunner;
   VmService _vmService;
   StreamSubscription<void> _logSubscription;
-  ScriptList _scripts;
   IsolateRef _testIsolateRef;
 
   @override
@@ -159,7 +148,6 @@ class WebTestIsolate extends TestIsolate {
     _vmService = testRunner.vmService;
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.first;
-    _scripts = await _vmService.getScripts(_testIsolateRef.id);
 
     await Future.wait([
       _vmService.streamListen(EventStreams.kStdout),
@@ -197,17 +185,7 @@ class WebTestIsolate extends TestIsolate {
   }
 
   @override
-  Future<TestResult> runTest(TestInfo testInfo, bool debugger) async {
-    if (debugger) {
-      await _vmService.addBreakpoint(
-        _testIsolateRef.id,
-        _scripts.scripts
-            .firstWhere((script) => script.uri == testInfo.multiRootUri)
-            .id,
-        testInfo.line + 1,
-      );
-    }
-
+  Future<TestResult> runTest(TestInfo testInfo) async {
     Map<String, Object> result;
     try {
       result = (await _vmService.callServiceExtension(
