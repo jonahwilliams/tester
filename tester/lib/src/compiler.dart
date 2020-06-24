@@ -63,7 +63,7 @@ Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
   }
 }
 
-main() {
+main() async {
   var zone = Zone.current.fork(
     specification: ZoneSpecification(
       print: (self, parent, zone, line) {
@@ -83,7 +83,9 @@ main() {
     final result = await zone.run(() => executeTest(test, library));
     return ServiceExtensionResponse.result(json.encode(result));
   });
-  stdin.listen((_) {});
+  while (true) {
+    await Future.delayed(const Duration(hours: 1));
+  }
 }
 ''';
 
