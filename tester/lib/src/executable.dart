@@ -70,7 +70,12 @@ final argParser = ArgParser()
     defaultsTo: false,
   )
   ..addOption('flutter-root',
-      help: 'The path to the root of a flutter checkout.');
+      help: 'The path to the root of a flutter checkout.')
+  ..addOption(
+    'times',
+    help: 'The number of times to run each test.',
+    defaultsTo: '1',
+  );
 
 Future<void> main(List<String> args) async {
   if (args.contains('-h') || args.contains('--help')) {
@@ -166,6 +171,7 @@ Future<void> main(List<String> args) async {
     workspacePath: workspace.path,
     packagesRootPath: Directory(projectDirectory).absolute.path,
     tests: tests,
+    times: int.tryParse(argResults['times'] as String),
   );
 }
 

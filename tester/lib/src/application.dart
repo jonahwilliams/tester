@@ -36,6 +36,7 @@ void runApplication({
   @required List<Uri> tests,
   @required String packagesRootPath,
   @required String workspacePath,
+  @required int times,
 }) async {
   if (!batchMode || debugger) {
     concurrency = 1;
@@ -137,7 +138,7 @@ void runApplication({
     projectRoot: packagesRootPath,
     verbose: verbose,
     ci: ci,
-    testCount: testInfos.testCount,
+    testCount: testInfos.testCount * times,
   );
   HttpServer devtoolServer;
   if (debugger) {
@@ -159,7 +160,8 @@ void runApplication({
     writer.writeHeader();
     var testOrder = <TestInfo>[
       for (var testFileUri in testInfos.testInformation.keys)
-        for (var testInfo in testInfos.testInformation[testFileUri]) testInfo
+        for (var testInfo in testInfos.testInformation[testFileUri])
+          for (var i = 0; i < times; i++) testInfo
     ]..shuffle();
 
     await Future.wait(<Future<void>>[
