@@ -157,30 +157,18 @@ void runApplication({
 
   if (batchMode) {
     writer.writeHeader();
-    var workLists = <List<TestInfo>>[
-      for (var i = 0; i < concurrency; i++) <TestInfo>[],
-    ];
-    var currentTarget = 0;
-    void addAndSwitch(TestInfo testInfo) {
-      workLists[currentTarget].add(testInfo);
-      currentTarget += 1;
-      currentTarget %= concurrency;
-    }
-
-    <TestInfo>[
+    var testOrder = <TestInfo>[
       for (var testFileUri in testInfos.testInformation.keys)
         for (var testInfo in testInfos.testInformation[testFileUri]) testInfo
-    ]
-      ..shuffle()
-      ..forEach(addAndSwitch);
+    ]..shuffle();
 
     await Future.wait(<Future<void>>[
       for (var i = 0; i < concurrency; i++)
         (() async {
-          var tests = workLists[i];
-          for (var testInfo in tests) {
-            var testResult = await testIsolates[i].runTest(testInfo, debugger);
-            writer.writeTest(testResult, testInfo);
+          while (testOrder.isNotEmpty) {
+            var nextTest = testOrder.removeLast();
+            var testResult = await testIsolates[i].runTest(nextTest, debugger);
+            writer.writeTest(testResult, nextTest);
           }
         })()
     ]);
