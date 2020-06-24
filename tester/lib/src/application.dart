@@ -37,7 +37,7 @@ void runApplication({
   @required String packagesRootPath,
   @required String workspacePath,
 }) async {
-  if (!batchMode || (coverageOutputPath != null || debugger)) {
+  if (!batchMode || debugger) {
     concurrency = 1;
   }
   var fileSystem = const LocalFileSystem();
@@ -175,11 +175,15 @@ void runApplication({
 
     writer.writeSummary();
     if (coverageOutputPath != null) {
-      var packagesPath =
-          const LocalFileSystem().path.join(packagesRootPath, '.packages');
+      var packagesPath = fileSystem.path.join(packagesRootPath, '.packages');
       print('Collecting coverage data...');
-      await coverage.collectCoverageIsolate(testIsolates.single.vmService,
-          (String libraryName) => libraryName.contains(appName), packagesPath);
+      await Future.wait(<Future<void>>[
+        for (var i = 0; i < concurrency; i++)
+          coverage.collectCoverageIsolate(
+              testIsolates[i].vmService,
+              (String libraryName) => libraryName.contains(appName),
+              packagesPath)
+      ]);
       try {
         await coverage.writeCoverageData(
           coverageOutputPath,
