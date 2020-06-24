@@ -125,7 +125,8 @@ void testLoadsFromCacheUpToDate() {
 
   infoProvider.loadTestInfos();
 
-  var testInfo = infoProvider.cachedData[Uri.parse('file:///test/example_test.dart')];
+  var testInfo =
+      infoProvider.cachedData[Uri.parse('file:///test/example_test.dart')];
   expect(testInfo, isNotNull);
   expect(testInfo.single.name, 'testExample');
   expect(infoProvider.cachedStats[Uri.parse('file:///test/example_test.dart')],

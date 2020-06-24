@@ -61,8 +61,7 @@ class TestInformationProvider {
       for (var file in files) {
         var stat = file['s'] as String;
         var uri = Uri.parse(file['u'] as String);
-        var newStat =
-            fileSystem.file(uri).lastModifiedSync();
+        var newStat = fileSystem.file(uri).lastModifiedSync();
         if ((newStat.toIso8601String()) == stat && newStat != null) {
           var infos = <TestInfo>[];
           var datas = file['ds'] as List<dynamic>;
