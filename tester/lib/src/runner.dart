@@ -30,14 +30,31 @@ abstract class TestRunner {
   FutureOr<void> dispose();
 }
 
-Future<String> _pollForServiceFile(File file) async {
+Future<Uri> _pollForServiceFile(File file) async {
+  var maxAttempts = 2000;
+  var current = 0;
+
   while (true) {
-    if (file.existsSync()) {
-      var result = file.readAsStringSync();
-      file.deleteSync();
-      return result;
+    current += 1;
+    try {
+      if (file.existsSync()) {
+        var contents = file.readAsStringSync();
+        var result = Uri.parse(json.decode(contents)['uri'] as String);
+        file.deleteSync();
+        return result;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    } on FileSystemException {
+      // On Windows this can happen if the file is read at the same
+      // time that the VM is writing it.
+    } on FormatException {
+      // This could happen if the file is read before the write
+      // has completed.
+    } finally {
+      if (current >= maxAttempts) {
+        throw Exception('Failed to connect to Dart VM.');
+      }
     }
-    await Future<void>.delayed(const Duration(seconds: 1));
   }
 }
 
@@ -97,7 +114,7 @@ class VmTestRunner implements TestRunner {
 
     return RunnerStartResult(
       isolateName: '',
-      serviceUri: Uri.parse(json.decode(serviceContents)['uri'] as String),
+      serviceUri: serviceContents,
     );
   }
 
