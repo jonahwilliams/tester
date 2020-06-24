@@ -84,7 +84,7 @@ class Resident {
         writer.writeHeader();
         for (var testFileUri in testInformation.keys) {
           for (var testInfo in testInformation[testFileUri]) {
-            var testResult = await testIsolate.runTest(testInfo, false);
+            var testResult = await testIsolate.runTest(testInfo);
             writer.writeTest(testResult, testInfo);
           }
         }
@@ -125,7 +125,7 @@ class Resident {
       var testInfos = testInformation[testUri];
       writer.writeHeader();
       for (var testInfo in testInfos) {
-        var testResult = await testIsolate.runTest(testInfo, false);
+        var testResult = await testIsolate.runTest(testInfo);
         writer.writeTest(testResult, testInfo);
       }
       writer.writeSummary();

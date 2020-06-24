@@ -92,6 +92,10 @@ class VmTestRunner implements TestRunner {
         onExit();
       }
     }));
+    _process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(stderr.writeln);
 
     var serviceContents = await _pollForServiceFile(uniqueFile);
 
