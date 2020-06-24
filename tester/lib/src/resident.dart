@@ -32,9 +32,9 @@ class Resident {
     @required this.tests,
     @required this.packagesRootPath,
   }) : infoProvider = TestInformationProvider(
-          config: config,
           testCompatMode: testCompatMode,
           packagesRootPath: packagesRootPath,
+          testManifestPath: null,
         );
 
   final projectFileInvalidator = ProjectFileInvalidator();
@@ -50,10 +50,7 @@ class Resident {
   Map<Uri, List<TestInfo>> testInformation;
 
   Future<void> start() async {
-    testInformation = <Uri, List<TestInfo>>{};
-    for (var testFileUri in tests) {
-      testInformation[testFileUri] = infoProvider.collectTestInfo(testFileUri);
-    }
+    testInformation = infoProvider.collectTestInfos(tests).testInformation;
 
     var pendingTest = false;
     var controller = StreamController<WatchEvent>();
@@ -112,15 +109,17 @@ class Resident {
         return;
       }
       pendingTest = true;
-      for (var testFileUri in invalidated) {
-        if (testInformation.containsKey(testFileUri)) {
-          testInformation[testFileUri] =
-              infoProvider.collectTestInfo(testFileUri);
-        }
-      }
+      testInformation = {
+        ...testInformation,
+        ...infoProvider.collectTestInfos([
+          for (var testFileUri in invalidated)
+            if (testInformation.containsKey(testFileUri)) testFileUri
+        ]).testInformation
+      };
       var result = await compiler.recompile(invalidated, testInformation);
       if (result != null) {
-        testInformation[testUri] = infoProvider.collectTestInfo(testUri);
+        testInformation[testUri] =
+            infoProvider.collectTestInfos([testUri]).testInformation[testUri];
         await testIsolate.reload(result);
       }
       var testInfos = testInformation[testUri];

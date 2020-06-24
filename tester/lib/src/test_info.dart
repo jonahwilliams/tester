@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 // @dart=2.8
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file/local.dart';
@@ -14,7 +15,6 @@ import 'package:_fe_analyzer_shared/src/scanner/token.dart';
 import 'package:_fe_analyzer_shared/src/parser/listener.dart';
 import 'package:_fe_analyzer_shared/src/scanner/utf8_bytes_scanner.dart';
 
-import 'config.dart';
 import 'platform.dart';
 
 /// An abstraction layer over the analyzer API.
@@ -22,19 +22,113 @@ class TestInformationProvider {
   TestInformationProvider({
     this.fileSystem = const LocalFileSystem(),
     this.platform = const LocalPlatform(),
-    @required this.config,
     @required this.testCompatMode,
     @required this.packagesRootPath,
+    @required this.testManifestPath,
   });
 
   final FileSystem fileSystem;
   final Platform platform;
-  final Config config;
   final String packagesRootPath;
+  final String testManifestPath;
   final bool testCompatMode;
 
+  final cachedData = <Uri, List<TestInfo>>{};
+  final cachedStats = <Uri, DateTime>{};
+
+  static const _version = 1;
+
+  /// Load the info cache from disk.
+  ///
+  /// On failures the exception is caught and ignored.
+  void loadTestInfos() {
+    if (testManifestPath == null) {
+      return;
+    }
+    File cacheFile;
+    try {
+      cacheFile = fileSystem.file(testManifestPath);
+      if (!cacheFile.existsSync()) {
+        return;
+      }
+      var rawManifest =
+          json.decode(cacheFile.readAsStringSync()) as Map<String, Object>;
+      if (rawManifest['v'] != _version) {
+        cacheFile.deleteSync();
+        return;
+      }
+      var files = rawManifest['f'] as List<dynamic>;
+      for (var file in files) {
+        var stat = file['s'] as String;
+        var uri = Uri.parse(file['u'] as String);
+        var newStat =
+            fileSystem.file(uri).lastModifiedSync();
+        if ((newStat.toIso8601String()) == stat && newStat != null) {
+          var infos = <TestInfo>[];
+          var datas = file['ds'] as List<dynamic>;
+          for (var data in datas) {
+            infos.add(TestInfo.fromJson(data as Map<String, Object>));
+          }
+          cachedData[uri] = infos;
+          cachedStats[uri] = newStat;
+        }
+      }
+    } catch (err) {
+      // Do nothing, caching has failed.
+      if (cacheFile != null && cacheFile.existsSync()) {
+        cacheFile.deleteSync();
+      }
+    }
+  }
+
+  /// Persist the info cache to disk.
+  ///
+  /// On failures the exception is caught and ignored.
+  void storeTestInfos() {
+    if (testManifestPath == null) {
+      return;
+    }
+    try {
+      var cacheFile = fileSystem.file(testManifestPath);
+      if (!cacheFile.parent.existsSync()) {
+        cacheFile.parent.createSync(recursive: true);
+      }
+      cacheFile.writeAsStringSync(
+        json.encode(<String, Object>{
+          'v': _version,
+          'f': [
+            for (var uri in cachedData.keys)
+              {
+                's': cachedStats[uri]?.toIso8601String(),
+                'u': uri.toString(),
+                'ds': [
+                  for (var info in cachedData[uri]) info.toJson(),
+                ],
+              },
+          ],
+        }),
+      );
+    } on Exception {
+      // Do nothing, caching has failed.
+    }
+  }
+
   /// Collect all top-level methods that begin with 'test'.
-  List<TestInfo> collectTestInfo(Uri testFileUri) {
+  TestInfos collectTestInfos(List<Uri> testFileUris) {
+    var result = TestInfos();
+    for (var testFileUri in testFileUris) {
+      var infos = _collectTestInfo(testFileUri);
+      result.testCount += infos.length;
+      result.testInformation[testFileUri] = infos;
+    }
+    return result;
+  }
+
+  List<TestInfo> _collectTestInfo(Uri testFileUri) {
+    var cachedInfos = cachedData[testFileUri];
+    if (cachedInfos != null) {
+      return cachedInfos;
+    }
     var testUri = testFileUri.toFilePath(windows: platform.isWindows);
     var relativePath = fileSystem
         .file(fileSystem.path.relative(
@@ -42,6 +136,7 @@ class TestInformationProvider {
           from: packagesRootPath,
         ))
         .uri;
+    var lastModified = fileSystem.file(testUri).lastModifiedSync();
     var rawBytes = fileSystem.file(testUri).readAsBytesSync();
     var bytes = Uint8List(rawBytes.length + 1);
     bytes.setRange(0, rawBytes.length, rawBytes);
@@ -69,8 +164,14 @@ class TestInformationProvider {
       testCompatMode,
     );
     Parser(collector).parseUnit(firstToken);
-    return collector.testInfo;
+    cachedStats[testFileUri] = lastModified;
+    return cachedData[testFileUri] = collector.testInfo;
   }
+}
+
+class TestInfos {
+  var testCount = 0;
+  final testInformation = <Uri, List<TestInfo>>{};
 }
 
 class TestInfo {
@@ -84,6 +185,19 @@ class TestInfo {
     this.compatTest,
   });
 
+  /// Create a [TestInfo] from a JSON object.
+  factory TestInfo.fromJson(Map<String, Object> json) {
+    return TestInfo(
+      name: json['n'] as String,
+      description: json['d'] as String,
+      testFileUri: Uri.parse(json['u'] as String),
+      multiRootUri: json['s'] as String,
+      line: json['l'] as int,
+      column: json['c'] as int,
+      compatTest: json['ct'] as bool,
+    );
+  }
+
   final String name;
   final String description;
   final Uri testFileUri;
@@ -91,6 +205,19 @@ class TestInfo {
   final int line;
   final int column;
   final bool compatTest;
+
+  /// Convert [TestInfo] to a JSON serializable object.
+  Map<String, Object> toJson() {
+    return <String, Object>{
+      'n': name,
+      'd': description,
+      'u': testFileUri.toString(),
+      's': multiRootUri,
+      'l': line,
+      'c': column,
+      'ct': compatTest,
+    };
+  }
 }
 
 /// Collect the names of top level methods that begin with tests.

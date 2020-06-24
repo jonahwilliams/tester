@@ -61,19 +61,16 @@ void runApplication({
     packagesUri: packagesUri,
   );
   var infoProvider = TestInformationProvider(
-    config: config,
     testCompatMode: testCompatMode,
     packagesRootPath: packagesRootPath,
+    testManifestPath: fileSystem.path.join(
+      workspacePath,
+      'info_cache.json',
+    ),
   );
-  var testCount = 0;
-  var testInformation = <Uri, List<TestInfo>>{};
-  for (var testFileUri in tests) {
-    var infos = infoProvider.collectTestInfo(testFileUri);
-    testCount += infos.length;
-    testInformation[testFileUri] = infos;
-  }
-
-  var result = await compiler.start(testInformation);
+  infoProvider.loadTestInfos();
+  var testInfos = infoProvider.collectTestInfos(tests);
+  var result = await compiler.start(testInfos);
   if (result == null) {
     exit(1);
   }
@@ -140,7 +137,7 @@ void runApplication({
     projectRoot: packagesRootPath,
     verbose: verbose,
     ci: ci,
-    testCount: testCount,
+    testCount: testInfos.testCount,
   );
   HttpServer devtoolServer;
   if (debugger) {
@@ -171,8 +168,8 @@ void runApplication({
     }
 
     <TestInfo>[
-      for (var testFileUri in testInformation.keys)
-        for (var testInfo in testInformation[testFileUri]) testInfo
+      for (var testFileUri in testInfos.testInformation.keys)
+        for (var testInfo in testInfos.testInformation[testFileUri]) testInfo
     ]
       ..shuffle()
       ..forEach(addAndSwitch);
@@ -210,6 +207,7 @@ void runApplication({
     if (devtoolServer != null) {
       await devtoolServer.close();
     }
+    infoProvider.storeTestInfos();
     exit(writer.exitCode);
   }
 

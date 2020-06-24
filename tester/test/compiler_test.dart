@@ -11,6 +11,7 @@ import 'package:package_config/package_config.dart';
 import 'package:tester/src/compiler.dart';
 import 'package:tester/src/config.dart';
 import 'package:expect/expect.dart';
+import 'package:tester/src/test_info.dart';
 
 import 'fake_process_manager.dart';
 
@@ -76,7 +77,7 @@ Future<void> testDartVmCompile() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
@@ -137,7 +138,7 @@ Future<void> testFlutterCompile() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(
@@ -198,7 +199,7 @@ Future<void> testDartWebCompile() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri, Uri.parse('file:///project/main.TargetPlatform.web.dart.dill'));
@@ -261,7 +262,7 @@ Future<void> testFlutterWebCompile() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri,
@@ -327,7 +328,7 @@ Future<void> testDartVmCompileWithExperiments() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
@@ -388,7 +389,7 @@ Future<void> testDartVmCompileWithNullSafety() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
@@ -449,7 +450,7 @@ Future<void> testDartVmCompileWithDisableNullSafety() async {
     packagesUri: Uri.file('/project/.packages'),
   );
 
-  var uri = await compiler.start({});
+  var uri = await compiler.start(TestInfos());
 
   expect(fileSystem.file('/project/main.dart').existsSync(), true);
   expect(uri, Uri.parse('file:///project/main.TargetPlatform.dart.dart.dill'));
