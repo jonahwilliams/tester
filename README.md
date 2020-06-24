@@ -43,8 +43,7 @@ void testLists() {
 }
 ```
 
-tester may also be run in package:test compatibility mode using `--test-compat-mode`. This allows tester to execute normal tests, to allow
-a gradual migration or mixed codebase.
+tester may also be run in package:test compatibility mode, which is automatically detected if your package depends on package:test. This allows tester to execute normal tests, to allow a gradual migration or mixed codebase.
 
 ### Test Concurrency
 
