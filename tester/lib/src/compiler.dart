@@ -422,18 +422,18 @@ class Compiler {
   List<Uri> get dependencies => _dependencies;
 
   /// Generate the synthetic entrypoint and bootstrap the compiler.
-  Future<Uri> start(Map<Uri, List<TestInfo>> testInformation) async {
+  Future<Uri> start(TestInfos testInfos) async {
     var workspace = fileSystem.directory(workspacePath);
     if (!workspace.existsSync()) {
       workspace.createSync(recursive: true);
     }
-    var package = testInformation.isNotEmpty
-        ? _packageConfig.packageOf(testInformation.keys.first)
+    var package = testInfos.testInformation.isNotEmpty
+        ? _packageConfig.packageOf(testInfos.testInformation.keys.first)
         : null;
 
     _mainFile =
         fileSystem.file(fileSystem.path.join(workspace.path, 'main.dart'));
-    _regenerateMain(testInformation, timeout, package);
+    _regenerateMain(testInfos.testInformation, timeout, package);
 
     var dillOutput = fileSystem
         .file(fileSystem.path
