@@ -132,7 +132,6 @@ class WebTestIsolate extends TestIsolate {
 
   final ChromeTestRunner testRunner;
   VmService _vmService;
-  StreamSubscription<void> _logSubscription;
   IsolateRef _testIsolateRef;
 
   @override
@@ -164,7 +163,6 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   FutureOr<void> dispose() async {
-    await _logSubscription?.cancel();
     await testRunner.dispose();
   }
 

@@ -28,6 +28,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     @required this.requireJS,
     @required this.config,
     @required this.packagesRootPath,
+    @required this.headless,
   });
 
   /// The expected executable name on linux.
@@ -61,6 +62,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   final File stackTraceMapper;
   final File requireJS;
   final String packagesRootPath;
+  final bool headless;
   final modules = <String, String>{};
   final digests = <String, String>{};
   final files = <String, Uint8List>{};
@@ -181,8 +183,10 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       '--no-default-browser-check',
       '--disable-default-apps',
       '--disable-translate',
-      '--headless',
-      '--disable-gpu',
+      if (headless) ...<String>[
+        '--headless',
+        '--disable-gpu',
+      ],
       '--no-sandbox',
       '--window-size=2400,1800',
       'http://localhost:$serverPort',
@@ -360,6 +364,11 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
       // the raw URL rather than crashing.
       return base;
     }
+  }
+
+  @override
+  Future<String> metadataContents(String serverPath) {
+    return null;
   }
 }
 

@@ -81,7 +81,10 @@ final argParser = ArgParser()
     help: 'Provide a number to configure the random seed used to shuffle test '
         'orderin. If not provided, tests will be shuffled in a different order '
         'on each run.',
-  );
+  )
+  ..addFlag('headless',
+      defaultsTo: true,
+      help: 'Whether to run the tester/browser in headless mode.');
 
 Future<void> main(List<String> args) async {
   if (args.contains('-h') || args.contains('--help')) {
@@ -181,6 +184,7 @@ Future<void> main(List<String> args) async {
     randomSeed: argResults.wasParsed('random-seed')
         ? int.tryParse(argResults['random-seed'] as String)
         : null,
+    headless: argResults['headless'] as bool,
   );
 }
 
