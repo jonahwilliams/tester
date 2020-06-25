@@ -8,6 +8,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:package_config/package_config_types.dart';
 import 'package:shelf/shelf_io.dart' as shelf;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:dwds/dwds.dart';
@@ -29,6 +30,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     @required this.config,
     @required this.packagesRootPath,
     @required this.headless,
+    @required this.packageConfig,
   });
 
   /// The expected executable name on linux.
@@ -63,6 +65,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   final File requireJS;
   final String packagesRootPath;
   final bool headless;
+  final PackageConfig packageConfig;
   final modules = <String, String>{};
   final digests = <String, String>{};
   final files = <String, Uint8List>{};
@@ -206,7 +209,13 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
     await for (var connection in _dwds.connectedApps) {
       connection.runMain();
-      var debugConnection = await _dwds.debugConnection(connection);
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+      DebugConnection debugConnection;
+      try {
+        debugConnection = await _dwds.debugConnection(connection);
+      } on AppConnectionException {
+        continue;
+      }
       vmService = debugConnection.vmService;
       return RunnerStartResult(
         isolateName: '',
@@ -280,7 +289,23 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   @override
   Future<String> dartSourceContents(String serverPath) async {
     if (!serverPath.endsWith('.dart')) return null;
-    return File(path.join(packagesRootPath, serverPath)).readAsStringSync();
+    var workspaceFile = File(path.join(packagesRootPath, serverPath));
+    if (workspaceFile.existsSync()) {
+      return workspaceFile.readAsStringSync();
+    }
+    var segments = Uri.parse(serverPath).pathSegments;
+    if (segments.first == 'packages' && segments.length > 2) {
+      var packageName = segments[1];
+      var package = packageConfig[packageName];
+      if (package != null) {
+        var uri = package.packageUriRoot.resolve(segments.skip(2).join('/'));
+        var packageFile = File(uri.toFilePath());
+        if (packageFile.existsSync()) {
+          return packageFile.readAsStringSync();
+        }
+      }
+    }
+    return null;
   }
 
   @override

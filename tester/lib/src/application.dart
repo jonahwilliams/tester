@@ -105,6 +105,7 @@ void runApplication({
           config: config,
           packagesRootPath: packagesRootPath,
           headless: headless,
+          packageConfig: packageConfig,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;
@@ -117,6 +118,7 @@ void runApplication({
           packagesRootPath: packagesRootPath,
           config: config,
           headless: headless,
+          packageConfig: packageConfig,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;
@@ -140,6 +142,7 @@ void runApplication({
   );
   HttpServer devtoolServer;
   if (debugger) {
+    print('VM Service listening at: ${testIsolates.single.vmServiceAddress}');
     devtoolServer = await devtools_server.serveDevTools(
       enableStdinCommands: false,
     );
