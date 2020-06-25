@@ -75,6 +75,12 @@ final argParser = ArgParser()
     'times',
     help: 'The number of times to run each test.',
     defaultsTo: '1',
+  )
+  ..addOption(
+    'random-seed',
+    help: 'Provide a number to configure the random seed used to shuffle test '
+        'orderin. If not provided, tests will be shuffled in a different order '
+        'on each run.',
   );
 
 Future<void> main(List<String> args) async {
@@ -172,6 +178,9 @@ Future<void> main(List<String> args) async {
     packagesRootPath: Directory(projectDirectory).absolute.path,
     tests: tests,
     times: int.tryParse(argResults['times'] as String),
+    randomSeed: argResults.wasParsed('random-seed')
+        ? int.tryParse(argResults['random-seed'] as String)
+        : null,
   );
 }
 
