@@ -39,6 +39,7 @@ void runApplication({
   @required String workspacePath,
   @required int times,
   @required int randomSeed,
+  @required bool headless,
 }) async {
   if (!batchMode || debugger) {
     concurrency = 1;
@@ -103,6 +104,7 @@ void runApplication({
           requireJS: File(config.requireJS),
           config: config,
           packagesRootPath: packagesRootPath,
+          headless: headless,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;
@@ -114,6 +116,7 @@ void runApplication({
           requireJS: File(config.requireJS),
           packagesRootPath: packagesRootPath,
           config: config,
+          headless: headless,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;
@@ -192,7 +195,7 @@ void runApplication({
       }
     }
     for (var testIsolate in testIsolates) {
-      testIsolate.dispose();
+      await testIsolate.dispose();
     }
     if (devtoolServer != null) {
       await devtoolServer.close();

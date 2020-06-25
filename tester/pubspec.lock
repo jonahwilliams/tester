@@ -56,7 +56,7 @@ packages:
       name: collection
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.14.12"
+    version: "1.14.13"
   convert:
     dependency: transitive
     description:
@@ -84,16 +84,16 @@ packages:
       name: dart_console
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.1"
+    version: "0.6.2"
   devtools:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: devtools
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.2.5"
   devtools_server:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: devtools_server
       url: "https://pub.dartlang.org"
@@ -112,7 +112,7 @@ packages:
       name: dwds
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.1"
+    version: "5.0.0"
   expect:
     dependency: "direct dev"
     description:
@@ -133,7 +133,7 @@ packages:
       name: file
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.1.0"
+    version: "5.2.1"
   fixnum:
     dependency: transitive
     description:
@@ -252,7 +252,7 @@ packages:
       name: shelf
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.7.5"
+    version: "0.7.7"
   shelf_packages_handler:
     dependency: transitive
     description:
@@ -343,7 +343,7 @@ packages:
       name: typed_data
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.6"
+    version: "1.2.0"
   usage:
     dependency: transitive
     description:
@@ -387,12 +387,12 @@ packages:
     source: hosted
     version: "0.7.3"
   win32:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.3"
+    version: "1.6.4"
   yaml:
     dependency: "direct main"
     description:
