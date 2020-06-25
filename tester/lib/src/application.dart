@@ -4,6 +4,7 @@
 
 // @dart=2.8
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
@@ -37,6 +38,7 @@ void runApplication({
   @required String packagesRootPath,
   @required String workspacePath,
   @required int times,
+  @required int randomSeed,
 }) async {
   if (!batchMode || debugger) {
     concurrency = 1;
@@ -149,13 +151,14 @@ void runApplication({
     );
   }
 
+  var random = math.Random(randomSeed);
   if (batchMode) {
     writer.writeHeader();
     var testOrder = <TestInfo>[
       for (var testFileUri in testInfos.testInformation.keys)
         for (var testInfo in testInfos.testInformation[testFileUri])
           for (var i = 0; i < times; i++) testInfo
-    ]..shuffle();
+    ]..shuffle(random);
 
     await Future.wait(<Future<void>>[
       for (var i = 0; i < concurrency; i++)
