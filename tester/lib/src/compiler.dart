@@ -145,7 +145,10 @@ main() async {
     final result = await executeTest(test, library);
     return ServiceExtensionResponse.result(json.encode(result));
   });
+  ui.debugEmulateFlutterTesterEnvironment = true;
   await ui.webOnlyInitializePlatform();
+  (ui.window as dynamic).debugOverrideDevicePixelRatio(3.0)
+  (ui.window as dynamic).webOnlyDebugPhysicalSizeOverride = const ui.Size(2400, 1800);
 }
 
 ''';
