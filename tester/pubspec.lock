@@ -93,7 +93,7 @@ packages:
     source: hosted
     version: "0.2.5"
   devtools_server:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: devtools_server
       url: "https://pub.dartlang.org"
