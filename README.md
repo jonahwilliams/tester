@@ -8,7 +8,7 @@ An experimental test runner, designed for fast incremental test processing workf
 
 ## setup
 
-Tester works best when `tester/bin` is added to your PATH environment variable. The tool itself will self-snapshot, but does not yet support any auto-update functionality.
+tester is distributed via [pub](https://pub.dev/packages/tester), and can be installed with `dart pub global activate tester`.
 
 ## Running tests
 
