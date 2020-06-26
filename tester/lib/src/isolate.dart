@@ -200,6 +200,7 @@ class WebTestIsolate extends TestIsolate {
     _vmService = testRunner.vmService;
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.first;
+    await _waitForExtension(_testIsolateRef);
 
     await Future.wait([
       _vmService.streamListen(EventStreams.kStdout),
@@ -270,6 +271,22 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   Uri vmServiceAddress;
+
+  Future<void> _waitForExtension(IsolateRef isolateRef) async {
+    final Completer<void> completer = Completer<void>();
+    await vmService.streamListen(EventStreams.kExtension);
+    vmService.onExtensionEvent.listen((Event event) {
+      if (event.json['extensionKind'] == 'Flutter.FrameworkInitialization') {
+        completer.complete();
+      }
+    });
+    final Isolate isolate = await vmService.getIsolate(isolateRef.id);
+    if (isolate.extensionRPCs.contains('ext.callTest')) {
+      return isolate;
+    }
+    await completer.future;
+    return isolate;
+  }
 }
 
 /// The result of a test execution.
