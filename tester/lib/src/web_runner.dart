@@ -212,7 +212,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
     await for (var connection in _dwds.connectedApps) {
       connection.runMain();
-      await Future<void>.delayed(const Duration(milliseconds: 16));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       DebugConnection debugConnection;
       try {
         debugConnection = await _dwds.debugConnection(connection);
@@ -307,6 +307,11 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
           return packageFile.readAsStringSync();
         }
       }
+    }
+    if (serverPath == 'tester/main.dart') {
+      return File(
+              path.join(packagesRootPath, '.dart_tool', 'tester', 'main.dart'))
+          .readAsStringSync();
     }
     return null;
   }

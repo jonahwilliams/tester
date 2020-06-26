@@ -137,6 +137,11 @@ Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
 }
 
 main() async {
+  ui.debugEmulateFlutterTesterEnvironment = true;
+  await ui.webOnlyInitializePlatform();
+  (ui.window as dynamic).debugOverrideDevicePixelRatio(3.0);
+  (ui.window as dynamic).webOnlyDebugPhysicalSizeOverride = const ui.Size(2400, 1800);
+
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
@@ -146,10 +151,6 @@ main() async {
     final result = await executeTest(test, library);
     return ServiceExtensionResponse.result(json.encode(result));
   });
-  ui.debugEmulateFlutterTesterEnvironment = true;
-  await ui.webOnlyInitializePlatform();
-  (ui.window as dynamic).debugOverrideDevicePixelRatio(3.0)
-  (ui.window as dynamic).webOnlyDebugPhysicalSizeOverride = const ui.Size(2400, 1800);
 }
 
 ''';

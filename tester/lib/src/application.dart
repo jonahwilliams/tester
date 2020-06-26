@@ -164,6 +164,9 @@ void runApplication({
       false, // headless mode,
       false, // machine mode
     );
+    print('Press enter to begin test execution.');
+    await stdin.firstWhere((element) => true);
+    print('Starting...');
   }
 
   var random = math.Random(randomSeed);
