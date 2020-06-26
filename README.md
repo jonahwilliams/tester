@@ -1,7 +1,8 @@
 # tester
 
-<img width="650" src="https://user-images.githubusercontent.com/8975114/83311624-9b562f00-a1c4-11ea-9716-92cd3c455b9e.PNG">
+Use via `dart pub global activate tester`
 
+<img width="650" src="https://user-images.githubusercontent.com/8975114/83311624-9b562f00-a1c4-11ea-9716-92cd3c455b9e.PNG">
 
 An experimental test runner, designed for fast incremental test processing workflows and maximum flexibility due to a lack of significant runtime. Currently supports running tests on the Dart VM & Flutter, and within the Chrome browser it can run both Dart Web and Flutter for Web tests. Requires a version of the Flutter SDK that is extremely close to ToT to be present on the PATH, or configured via `FLUTTER_ROOT`.
 
