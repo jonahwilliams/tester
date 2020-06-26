@@ -212,7 +212,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
 
     await for (var connection in _dwds.connectedApps) {
       connection.runMain();
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // await Future<void>.delayed(const Duration(milliseconds: 200));
       DebugConnection debugConnection;
       try {
         debugConnection = await _dwds.debugConnection(connection);
