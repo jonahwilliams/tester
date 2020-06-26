@@ -88,13 +88,20 @@ void runApplication({
         var testRunner = VmTestRunner(
           dartExecutable: config.dartPath,
         );
-        testIsolate = VmTestIsolate(testRunner: testRunner);
+        testIsolate = VmTestIsolate(
+          testRunner: testRunner,
+          // VM does not need an compile expression service
+          compileExpression: null,
+        );
         break;
       case TargetPlatform.flutter:
         var testRunner = FlutterTestRunner(
           flutterTesterPath: config.flutterTesterPath,
         );
-        testIsolate = VmTestIsolate(testRunner: testRunner);
+        testIsolate = VmTestIsolate(
+          testRunner: testRunner,
+          compileExpression: compiler.compileExpression,
+        );
         break;
       case TargetPlatform.web:
         var testRunner = ChromeTestRunner(
@@ -106,6 +113,7 @@ void runApplication({
           packagesRootPath: packagesRootPath,
           headless: headless,
           packageConfig: packageConfig,
+          expressionCompiler: compiler,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;
@@ -119,6 +127,7 @@ void runApplication({
           config: config,
           headless: headless,
           packageConfig: packageConfig,
+          expressionCompiler: compiler,
         );
         testIsolate = WebTestIsolate(testRunner: testRunner);
         break;

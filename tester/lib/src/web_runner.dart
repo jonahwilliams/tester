@@ -31,6 +31,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     @required this.packagesRootPath,
     @required this.headless,
     @required this.packageConfig,
+    @required this.expressionCompiler,
   });
 
   /// The expected executable name on linux.
@@ -66,6 +67,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   final String packagesRootPath;
   final bool headless;
   final PackageConfig packageConfig;
+  final ExpressionCompiler expressionCompiler;
   final modules = <String, String>{};
   final digests = <String, String>{};
   final files = <String, Uint8List>{};
@@ -145,6 +147,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
         chromeConnection: () {
           return chromeConnection.future;
         },
+        expressionCompiler: expressionCompiler,
         serveDevTools: false,
         enableDebugging: true,
         loadStrategy: RequireStrategy(
