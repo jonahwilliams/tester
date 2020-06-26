@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dwds/dwds.dart';
 import 'package:file/file.dart';
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
@@ -385,7 +386,7 @@ class _Reporter {
 /// Abstraction for the frontend_server compiler process.
 ///
 /// The frontend_server communicates to this tool over stdin and stdout.
-class Compiler {
+class Compiler implements ExpressionCompiler {
   Compiler({
     @required this.config,
     @required this.compilerMode,
@@ -640,6 +641,97 @@ class Compiler {
 
   void dispose() {
     _frontendServer.kill();
+  }
+
+  /// An expression compilation service to provide the flutter_tester with debugger
+  /// support.
+  Future<String> compileExpression(
+    String isolateId,
+    String expression,
+    List<String> definitions,
+    List<String> typeDefinitions,
+    String libraryUri,
+    String klass,
+    bool isStatic,
+  ) async {
+    _stdoutHandler.reset(suppressCompilerMessages: true, expectSources: false);
+
+    // 'compile-expression' should be invoked after compiler has been started,
+    // program was compiled.
+    if (_frontendServer == null) {
+      return null;
+    }
+
+    var inputKey = Uuid().v4();
+    _frontendServer.stdin
+      ..writeln('compile-expression $inputKey')
+      ..writeln(expression);
+    definitions?.forEach(_frontendServer.stdin.writeln);
+    _frontendServer.stdin.writeln(inputKey);
+    typeDefinitions?.forEach(_frontendServer.stdin.writeln);
+    _frontendServer.stdin
+      ..writeln(inputKey)
+      ..writeln(libraryUri ?? '')
+      ..writeln(klass ?? '')
+      ..writeln(isStatic ?? false);
+
+    var compilerOutput = await _stdoutHandler.compilerOutput.future;
+    if (compilerOutput != null && compilerOutput.outputFilename != null) {
+      return base64.encode(
+          fileSystem.file(compilerOutput.outputFilename).readAsBytesSync());
+    }
+    throw Exception('Failed to compile: "$expression"');
+  }
+
+  /// Expression compilation service to provide the web and flutter_web platforms
+  /// with debugger support via dwds.
+  Future<ExpressionCompilationResult> compileExpressionToJs(
+    String isolateId,
+    String libraryUri,
+    int line,
+    int column,
+    Map<String, String> jsModules,
+    Map<String, String> jsFrameValues,
+    String moduleName,
+    String expression,
+  ) async {
+    _stdoutHandler.reset(suppressCompilerMessages: true, expectSources: false);
+
+    // 'compile-expression-to-js' should be invoked after compiler has been started,
+    // program was compiled.
+    if (_frontendServer == null) {
+      return null;
+    }
+
+    var inputKey = Uuid().v4();
+    _frontendServer.stdin
+      ..writeln('compile-expression-to-js $inputKey')
+      ..writeln(libraryUri ?? '')
+      ..writeln(line)
+      ..writeln(column);
+    jsModules?.forEach((String k, String v) {
+      _frontendServer.stdin.writeln('$k:$v');
+    });
+    _frontendServer.stdin.writeln(inputKey);
+    jsFrameValues?.forEach((String k, String v) {
+      _frontendServer.stdin.writeln('$k:$v');
+    });
+    _frontendServer.stdin
+      ..writeln(inputKey)
+      ..writeln(moduleName ?? '')
+      ..writeln(expression ?? '');
+
+    var compilerOutput = await _stdoutHandler.compilerOutput.future;
+    if (compilerOutput != null && compilerOutput.outputFilename != null) {
+      var content = utf8.decode(
+          fileSystem.file(compilerOutput.outputFilename).readAsBytesSync());
+      return ExpressionCompilationResult(
+          content, compilerOutput.errorCount > 0);
+    }
+
+    return ExpressionCompilationResult(
+        'InternalError: frontend server failed to compile \'$expression\'',
+        true);
   }
 }
 

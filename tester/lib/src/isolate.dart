@@ -15,6 +15,20 @@ import 'runner.dart';
 import 'test_info.dart';
 import 'web_runner.dart';
 
+/// Typedef for inject expression compilation function.
+///
+/// This is used by the flutter_tester device, since it does not
+/// have a kernel service to translate source for debuggers.
+typedef CompileExpression = Future<String> Function(
+  String isolateId,
+  String expression,
+  List<String> definitions,
+  List<String> typeDefinitions,
+  String libraryUri,
+  String klass,
+  bool isStatic,
+);
+
 /// The isolate under test and manager of the [TestRunner] lifecycle.
 abstract class TestIsolate {
   /// Start the test isolate.
@@ -40,9 +54,12 @@ abstract class TestIsolate {
 class VmTestIsolate extends TestIsolate {
   VmTestIsolate({
     @required TestRunner testRunner,
-  }) : _testRunner = testRunner;
+    @required CompileExpression compileExpression,
+  })  : _testRunner = testRunner,
+        _compileExpression = compileExpression;
 
   final TestRunner _testRunner;
+  final CompileExpression _compileExpression;
   IsolateRef _testIsolateRef;
   VmService _vmService;
 
@@ -63,7 +80,7 @@ class VmTestIsolate extends TestIsolate {
             isolate.pauseEvent.kind != EventKind.kNone)) {
       await _vmService.resume(isolate.id);
     }
-
+    await _registerExpressionCompilation();
     await Future.wait([
       _vmService.streamListen(EventStreams.kLogging),
     ]);
@@ -123,6 +140,42 @@ class VmTestIsolate extends TestIsolate {
 
   @override
   Uri vmServiceAddress;
+
+  Future<void> _registerExpressionCompilation() async {
+    if (_compileExpression == null) {
+      return;
+    }
+    vmService.registerServiceCallback('compileExpression',
+        (Map<String, dynamic> params) async {
+      var isolateId =
+          _validateRpcStringParam('compileExpression', params, 'isolateId');
+      var expression =
+          _validateRpcStringParam('compileExpression', params, 'expression');
+      var definitions =
+          List<String>.from(params['definitions'] as List<dynamic>);
+      var typeDefinitions =
+          List<String>.from(params['typeDefinitions'] as List<dynamic>);
+      var libraryUri = params['libraryUri'] as String;
+      var klass = params['klass'] as String;
+      var isStatic =
+          _validateRpcBoolParam('compileExpression', params, 'isStatic');
+
+      final String kernelBytesBase64 = await _compileExpression(
+        isolateId,
+        expression,
+        definitions,
+        typeDefinitions,
+        libraryUri,
+        klass,
+        isStatic,
+      );
+      return <String, dynamic>{
+        'type': 'Success',
+        'result': <String, dynamic>{'kernelBytes': kernelBytesBase64},
+      };
+    });
+    vmService.registerService('compileExpression', 'Tester');
+  }
 }
 
 class WebTestIsolate extends TestIsolate {
@@ -264,4 +317,47 @@ class TestResult {
   ///
   /// This field is always `null` for timeout failures.
   final String stackTrace;
+}
+
+/// The error codes for the JSON-RPC standard.
+///
+/// See also: https://www.jsonrpc.org/specification#error_object
+abstract class RPCErrorCodes {
+  /// The method does not exist or is not available.
+  static const int kMethodNotFound = -32601;
+
+  /// Invalid method parameter(s), such as a mismatched type.
+  static const int kInvalidParams = -32602;
+
+  /// Internal JSON-RPC error.
+  static const int kInternalError = -32603;
+
+  /// Application specific error codes.
+  static const int kServerError = -32000;
+}
+
+String _validateRpcStringParam(
+    String methodName, Map<String, dynamic> params, String paramName) {
+  final dynamic value = params[paramName];
+  if (value is! String || (value as String).isEmpty) {
+    throw RPCError(
+      methodName,
+      RPCErrorCodes.kInvalidParams,
+      "Invalid '$paramName': $value",
+    );
+  }
+  return value as String;
+}
+
+bool _validateRpcBoolParam(
+    String methodName, Map<String, dynamic> params, String paramName) {
+  final dynamic value = params[paramName];
+  if (value != null && value is! bool) {
+    throw RPCError(
+      methodName,
+      RPCErrorCodes.kInvalidParams,
+      "Invalid '$paramName': $value",
+    );
+  }
+  return (value as bool) ?? false;
 }
