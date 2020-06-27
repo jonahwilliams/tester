@@ -8,7 +8,6 @@ import 'dart:math' as math;
 
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
-import 'package:devtools_server/devtools_server.dart' as devtools_server;
 import 'package:package_config/package_config.dart';
 
 import 'coverage.dart';
@@ -149,25 +148,6 @@ void runApplication({
     ci: ci,
     testCount: testInfos.testCount * times,
   );
-  HttpServer devtoolServer;
-  if (debugger) {
-    print('VM Service listening at: ${testIsolates.single.vmServiceAddress}');
-    devtoolServer = await devtools_server.serveDevTools(
-      enableStdinCommands: false,
-    );
-    await devtools_server.launchDevTools(
-      <String, dynamic>{
-        'reuseWindows': true,
-      },
-      testIsolates.single.vmServiceAddress,
-      'http://${devtoolServer.address.host}:${devtoolServer.port}',
-      false, // headless mode,
-      false, // machine mode
-    );
-    print('Press enter to begin test execution.');
-    await stdin.firstWhere((element) => true);
-    print('Starting...');
-  }
 
   var random = math.Random(randomSeed);
   if (batchMode) {
@@ -177,6 +157,13 @@ void runApplication({
         for (var testInfo in testInfos.testInformation[testFileUri])
           for (var i = 0; i < times; i++) testInfo
     ]..shuffle(random);
+
+    if (debugger) {
+      print('VM Service listening at: ${testIsolates.single.vmServiceAddress} .'
+          'Press enter to begin test execution.');
+      await stdin.firstWhere((element) => true);
+      print('Starting...');
+    }
 
     await Future.wait(<Future<void>>[
       for (var i = 0; i < concurrency; i++)
@@ -211,9 +198,6 @@ void runApplication({
     }
     for (var testIsolate in testIsolates) {
       await testIsolate.dispose();
-    }
-    if (devtoolServer != null) {
-      await devtoolServer.close();
     }
     infoProvider.storeTestInfos();
     exit(writer.exitCode);
