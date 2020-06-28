@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 // @dart=2.8
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -212,6 +213,15 @@ void runApplication({
     packagesRootPath: packagesRootPath,
     tests: tests,
   );
-  print('VM Service listening at ${testIsolates.single.vmServiceAddress}');
+  print('VM Service listening at ${testIsolates.single.vmServiceAddress}.'
+      ' Press q/Q to quit.');
   await resident.start();
+  stdin.echoMode = false;
+  stdin.lineMode = false;
+  stdin.transform(utf8.decoder).listen((String char) async {
+    if (char == 'q' || char == 'Q') {
+      await resident.dispose();
+      exit(0);
+    }
+  });
 }

@@ -96,7 +96,7 @@ class Resident {
       if (event.type != ChangeType.MODIFY) {
         return;
       }
-      var testUri = File(event.path).absolute.uri;
+      var testUri = File(path.relative(event.path, from: packagesRootPath)).uri;
       if (testInformation[testUri] == null) {
         return;
       }
