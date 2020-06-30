@@ -274,7 +274,11 @@ class WebTestIsolate extends TestIsolate {
 
   Future<void> _waitForExtension(IsolateRef isolateRef) async {
     final Completer<void> completer = Completer<void>();
-    await vmService.streamListen(EventStreams.kExtension);
+    try {
+      await vmService.streamListen(EventStreams.kExtension);
+    } on RPCError {
+      // Do nothing, already subscribed.
+    }
     vmService.onExtensionEvent.listen((Event event) {
       if (event.json['extensionKind'] == 'Flutter.FrameworkInitialization') {
         completer.complete();

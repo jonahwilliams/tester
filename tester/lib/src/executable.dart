@@ -84,7 +84,9 @@ final argParser = ArgParser()
   )
   ..addFlag('headless',
       defaultsTo: true,
-      help: 'Whether to run the tester/browser in headless mode.');
+      help: 'Whether to run the tester/browser in headless mode.')
+  ..addFlag('run-only', hide: true)
+  ..addFlag('compile-only', hide: true);
 
 Future<void> main(List<String> args) async {
   if (args.contains('-h') || args.contains('--help')) {
@@ -185,6 +187,8 @@ Future<void> main(List<String> args) async {
         ? int.tryParse(argResults['random-seed'] as String)
         : null,
     headless: argResults['headless'] as bool,
+    compileOnly: argResults['compile-only'] as bool,
+    runOnly: argResults['run-only'] as bool,
   );
 }
 
