@@ -40,6 +40,8 @@ void runApplication({
   @required int times,
   @required int randomSeed,
   @required bool headless,
+  @required bool compileOnly,
+  @required bool runOnly,
 }) async {
   if (!batchMode || debugger) {
     concurrency = 1;
@@ -74,9 +76,21 @@ void runApplication({
   );
   infoProvider.loadTestInfos();
   var testInfos = infoProvider.collectTestInfos(tests);
-  var result = await compiler.start(testInfos);
-  if (result == null) {
-    exit(1);
+  Uri result;
+  if (!runOnly) {
+    result = await compiler.start(testInfos);
+    if (result == null) {
+      exit(1);
+    }
+  } else {
+    result = fileSystem
+        .file(fileSystem.path
+            .join(workspacePath, 'main.${targetPlatform}.dart.dill'))
+        .absolute
+        .uri;
+  }
+  if (compileOnly) {
+    exit(0);
   }
 
   var testIsolates = <TestIsolate>[];
