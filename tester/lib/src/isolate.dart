@@ -48,6 +48,15 @@ abstract class TestIsolate {
 
   /// An http or ws address for external debuggers to connect to.
   Uri get vmServiceAddress;
+
+  /// Poll the main isolate until the ext.callTest extension is registered.
+  Future<void> _waitForExtension(IsolateRef isolateRef) async {
+    Isolate isolate = await vmService.getIsolate(isolateRef.id);
+    while (!isolate.extensionRPCs.contains('ext.callTest')) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      isolate = await vmService.getIsolate(isolateRef.id);
+    }
+  }
 }
 
 /// The isolate under test and manager of the [TestRunner] lifecycle.
@@ -80,15 +89,25 @@ class VmTestIsolate extends TestIsolate {
             isolate.pauseEvent.kind != EventKind.kNone)) {
       await _vmService.resume(isolate.id);
     }
+    await _waitForExtension(_testIsolateRef);
     await _registerExpressionCompilation();
-    await Future.wait([
-      _vmService.streamListen(EventStreams.kLogging),
-    ]);
+    try {
+      await vmService.streamListen(EventStreams.kExtension);
+    } on RPCError {
+      // Do nothing, already subscribed.
+    }
     void decodeMessage(Event event) {
-      print(event.logRecord.message.valueAsString);
+      if (event.extensionKind == 'message') {
+        dynamic test = event.extensionData.data['test'];
+        var prefix = 'print';
+        if (test != null) {
+          prefix = test.toString();
+        }
+        stdout.write('[$prefix]:  ${event.extensionData.data['line']}');
+      }
     }
 
-    _vmService.onLoggingEvent.listen(decodeMessage);
+    _vmService.onExtensionEvent.listen(decodeMessage);
   }
 
   @override
@@ -271,26 +290,6 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   Uri vmServiceAddress;
-
-  Future<void> _waitForExtension(IsolateRef isolateRef) async {
-    final Completer<void> completer = Completer<void>();
-    try {
-      await vmService.streamListen(EventStreams.kExtension);
-    } on RPCError {
-      // Do nothing, already subscribed.
-    }
-    vmService.onExtensionEvent.listen((Event event) {
-      if (event.json['extensionKind'] == 'Flutter.FrameworkInitialization') {
-        completer.complete();
-      }
-    });
-    final Isolate isolate = await vmService.getIsolate(isolateRef.id);
-    if (isolate.extensionRPCs.contains('ext.callTest')) {
-      return isolate;
-    }
-    await completer.future;
-    return isolate;
-  }
 }
 
 /// The result of a test execution.
