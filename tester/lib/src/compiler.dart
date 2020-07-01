@@ -26,7 +26,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
 
-String currentTest;
+String currentTest = '';
 
 Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
   var libraryTests = testRegistry[libraryUri];
