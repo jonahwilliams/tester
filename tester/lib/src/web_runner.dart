@@ -8,6 +8,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:logging/logging.dart';
 import 'package:package_config/package_config_types.dart';
 import 'package:shelf/shelf_io.dart' as shelf;
 import 'package:shelf/shelf.dart' as shelf;
@@ -18,6 +19,7 @@ import 'package:vm_service/vm_service.dart';
 import 'package:webkit_inspection_protocol/webkit_inspection_protocol.dart';
 
 import 'config.dart';
+import 'logging.dart';
 import 'runner.dart';
 
 /// A test runner that spawns chrome and a dwds process.
@@ -32,6 +34,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     @required this.headless,
     @required this.packageConfig,
     @required this.expressionCompiler,
+    @required this.logger,
   });
 
   /// The expected executable name on linux.
@@ -68,6 +71,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
   final bool headless;
   final PackageConfig packageConfig;
   final ExpressionCompiler expressionCompiler;
+  final Logger logger;
   final modules = <String, String>{};
   final digests = <String, String>{};
   final files = <String, Uint8List>{};
@@ -173,59 +177,53 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     _chromeTempProfile = Directory.systemTemp.createTempSync('test_process')
       ..createSync();
 
-    _chromeProcess = await Process.start(_findChromeExecutable(), <String>[
-      // Using a tmp directory ensures that a new instance of chrome launches
-      // allowing for the remote debug port to be enabled.
-      '--user-data-dir=${_chromeTempProfile.path}',
-      '--remote-debugging-port=${port}',
-      // When the DevTools has focus we don't want to slow down the application.
-      '--disable-background-timer-throttling',
-      // Since we are using a temp profile, disable features that slow the
-      // Chrome launch.
-      '--disable-extensions',
-      '--disable-popup-blocking',
-      '--bwsi',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-default-apps',
-      '--disable-translate',
-      if (headless) ...<String>[
-        '--headless',
-        '--disable-gpu',
-      ],
-      '--no-sandbox',
-      '--window-size=2400,1800',
-      'http://localhost:$serverPort',
-    ]);
+    _chromeProcess = await measureCommand(
+        () => Process.start(_findChromeExecutable(), <String>[
+              // Using a tmp directory ensures that a new instance of chrome launches
+              // allowing for the remote debug port to be enabled.
+              '--user-data-dir=${_chromeTempProfile.path}',
+              '--remote-debugging-port=${port}',
+              // When the DevTools has focus we don't want to slow down the application.
+              '--disable-background-timer-throttling',
+              // Since we are using a temp profile, disable features that slow the
+              // Chrome launch.
+              '--disable-extensions',
+              '--disable-popup-blocking',
+              '--bwsi',
+              '--no-first-run',
+              '--no-default-browser-check',
+              '--disable-default-apps',
+              '--disable-translate',
+              if (headless) ...<String>[
+                '--headless',
+                '--disable-gpu',
+              ],
+              '--no-sandbox',
+              '--window-size=2400,1800',
+              'http://localhost:$serverPort',
+            ]),
+        'start_chrome',
+        logger);
 
-    await _chromeProcess.stderr
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .firstWhere(
-      (String line) => line.startsWith('DevTools listening'),
-      orElse: () {
-        return 'Failed to spawn stderr';
-      },
-    );
-    await _getRemoteDebuggerUrl(Uri.parse('http://localhost:$port'));
     chromeConnection.complete(ChromeConnection('localhost', port));
 
-    await for (var connection in _dwds.connectedApps) {
-      connection.runMain();
-      // await Future<void>.delayed(const Duration(milliseconds: 200));
-      DebugConnection debugConnection;
-      try {
-        debugConnection = await _dwds.debugConnection(connection);
-      } on AppConnectionException {
-        continue;
+    return measureCommand(() async {
+      await for (var connection in _dwds.connectedApps) {
+        connection.runMain();
+        DebugConnection debugConnection;
+        try {
+          debugConnection = await _dwds.debugConnection(connection);
+        } on AppConnectionException {
+          continue;
+        }
+        vmService = debugConnection.vmService;
+        return RunnerStartResult(
+          isolateName: '',
+          serviceUri: Uri.parse(debugConnection.uri),
+        );
       }
-      vmService = debugConnection.vmService;
-      return RunnerStartResult(
-        isolateName: '',
-        serviceUri: Uri.parse(debugConnection.uri),
-      );
-    }
-    throw Exception();
+      throw Exception();
+    }, 'dwds_connect', logger);
   }
 
   void updateCode(
@@ -376,28 +374,28 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     return null;
   }
 
-  /// Returns the full URL of the Chrome remote debugger for the main page.
-  ///
-  /// This takes the [base] remote debugger URL (which points to a browser-wide
-  /// page) and uses its JSON API to find the resolved URL for debugging the host
-  /// page.
-  Future<Uri> _getRemoteDebuggerUrl(Uri base) async {
-    try {
-      var client = HttpClient();
-      var request = await client.getUrl(base.resolve('/json/list'));
-      var response = await request.close();
-      var jsonObject =
-          await json.fuse(utf8).decoder.bind(response).single as List<dynamic>;
-      if (jsonObject == null || jsonObject.isEmpty) {
-        return base;
-      }
-      return base.resolve(jsonObject.first['devtoolsFrontendUrl'] as String);
-    } on Exception {
-      // If we fail to talk to the remote debugger protocol, give up and return
-      // the raw URL rather than crashing.
-      return base;
-    }
-  }
+  // /// Returns the full URL of the Chrome remote debugger for the main page.
+  // ///
+  // /// This takes the [base] remote debugger URL (which points to a browser-wide
+  // /// page) and uses its JSON API to find the resolved URL for debugging the host
+  // /// page.
+  // Future<Uri> _getRemoteDebuggerUrl(Uri base) async {
+  //   try {
+  //     var client = HttpClient();
+  //     var request = await client.getUrl(base.resolve('/json/list'));
+  //     var response = await request.close();
+  //     var jsonObject =
+  //         await json.fuse(utf8).decoder.bind(response).single as List<dynamic>;
+  //     if (jsonObject == null || jsonObject.isEmpty) {
+  //       return base;
+  //     }
+  //     return base.resolve(jsonObject.first['devtoolsFrontendUrl'] as String);
+  //   } on Exception {
+  //     // If we fail to talk to the remote debugger protocol, give up and return
+  //     // the raw URL rather than crashing.
+  //     return base;
+  //   }
+  // }
 
   @override
   Future<String> metadataContents(String serverPath) {

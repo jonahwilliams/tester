@@ -7,10 +7,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
+import 'logging.dart';
 import 'runner.dart';
 import 'test_info.dart';
 import 'web_runner.dart';
@@ -64,6 +66,7 @@ class VmTestIsolate extends TestIsolate {
   VmTestIsolate({
     @required TestRunner testRunner,
     @required CompileExpression compileExpression,
+    @required Logger logger,
   })  : _testRunner = testRunner,
         _compileExpression = compileExpression;
 
@@ -200,9 +203,11 @@ class VmTestIsolate extends TestIsolate {
 class WebTestIsolate extends TestIsolate {
   WebTestIsolate({
     @required this.testRunner,
+    @required this.logger,
   });
 
   final ChromeTestRunner testRunner;
+  final Logger logger;
   VmService _vmService;
   IsolateRef _testIsolateRef;
 
@@ -219,7 +224,11 @@ class WebTestIsolate extends TestIsolate {
     _vmService = testRunner.vmService;
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.first;
-    await _waitForExtension(_testIsolateRef);
+    await measureCommand(
+      () => _waitForExtension(_testIsolateRef),
+      'ext_registered',
+      logger,
+    );
 
     await Future.wait([
       _vmService.streamListen(EventStreams.kStdout),

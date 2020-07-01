@@ -3,15 +3,18 @@
 // found in the LICENSE file.
 
 // @dart=2.8
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:logging/logging.dart';
 import 'package:file/local.dart';
 import 'package:meta/meta.dart';
 import 'package:package_config/package_config.dart';
 
 import 'coverage.dart';
+import 'logging.dart';
 import 'test_info.dart';
 import 'compiler.dart';
 import 'config.dart';
@@ -43,6 +46,12 @@ void runApplication({
   @required bool compileOnly,
   @required bool runOnly,
 }) async {
+  var logger = Logger('tool');
+  if (verbose) {
+    logger.onRecord.listen((record) {
+      print(record.message);
+    });
+  }
   if (!batchMode || debugger) {
     concurrency = 1;
   }
@@ -51,7 +60,11 @@ void runApplication({
       .file(fileSystem.path.join(packagesRootPath, '.packages'))
       .absolute
       .uri;
-  var packageConfig = await loadPackageConfigUri(packagesUri);
+  var packageConfig = await measureCommand(
+    () => loadPackageConfigUri(packagesUri),
+    'package_config',
+    logger,
+  );
   var testCompatMode = packageConfig['test_api'] != null;
   var coverage = CoverageService();
   var compiler = Compiler(
@@ -74,11 +87,13 @@ void runApplication({
       'info_cache.json',
     ),
   );
-  infoProvider.loadTestInfos();
-  var testInfos = infoProvider.collectTestInfos(tests);
+  measureCommand(infoProvider.loadTestInfos, 'cached_test_info', logger);
+  var testInfos = await measureCommand(
+      () => infoProvider.collectTestInfos(tests), 'parse_tests', logger);
   Uri result;
   if (!runOnly) {
-    result = await compiler.start(testInfos);
+    result = await measureCommand(
+        () => compiler.start(testInfos), 'compile', logger);
     if (result == null) {
       exit(1);
     }
@@ -106,6 +121,7 @@ void runApplication({
           testRunner: testRunner,
           // VM does not need an compile expression service
           compileExpression: null,
+          logger: logger,
         );
         break;
       case TargetPlatform.flutter:
@@ -115,6 +131,7 @@ void runApplication({
         testIsolate = VmTestIsolate(
           testRunner: testRunner,
           compileExpression: compiler.compileExpression,
+          logger: logger,
         );
         break;
       case TargetPlatform.web:
@@ -128,8 +145,12 @@ void runApplication({
           headless: headless,
           packageConfig: packageConfig,
           expressionCompiler: compiler,
+          logger: logger,
         );
-        testIsolate = WebTestIsolate(testRunner: testRunner);
+        testIsolate = WebTestIsolate(
+          testRunner: testRunner,
+          logger: logger,
+        );
         break;
       case TargetPlatform.flutterWeb:
         var testRunner = ChromeTestRunner(
@@ -142,8 +163,12 @@ void runApplication({
           headless: headless,
           packageConfig: packageConfig,
           expressionCompiler: compiler,
+          logger: logger,
         );
-        testIsolate = WebTestIsolate(testRunner: testRunner);
+        testIsolate = WebTestIsolate(
+          testRunner: testRunner,
+          logger: logger,
+        );
         break;
     }
     loadingIsolates.add(testIsolate.start(result, () {}).then((_) {
@@ -155,7 +180,8 @@ void runApplication({
       exit(1);
     }));
   }
-  await Future.wait(loadingIsolates);
+  await measureCommand(
+      () => Future.wait(loadingIsolates), 'bootstrap_test_runners', logger);
 
   var writer = TestWriter(
     projectRoot: packagesRootPath,
