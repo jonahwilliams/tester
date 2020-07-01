@@ -43,8 +43,9 @@ final argParser = ArgParser()
     abbr: 'j',
     help: 'The number of test isolates to run concurrently in batch mode. '
         'This option only takes effect in batch mode without --coverage or '
-        '--debugger. If not provided, defaults to 1',
-    defaultsTo: '1',
+        '--debugger. If not provided, tester will attempt to select a reasonable '
+        'default based on the number of available cores and size of the provided '
+        'test suite.',
   )
   ..addOption(
     'timeout',
@@ -173,7 +174,9 @@ Future<void> main(List<String> args) async {
         ? argResults['coverage-output'] as String
         : null,
     timeout: int.tryParse(argResults['timeout'] as String) ?? 15,
-    concurrency: int.tryParse(argResults['concurrency'] as String),
+    concurrency: argResults.wasParsed('concurrency')
+        ? int.tryParse(argResults['concurrency'] as String)
+        : null,
     enabledExperiments: argResults['enable-experiment'] as List<String>,
     soundNullSafety: argResults['sound-null-safety'] as bool,
     debugger: argResults['debugger'] as bool,

@@ -5,7 +5,7 @@
 // @dart=2.8
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' hide Platform;
 import 'dart:math' as math;
 
 import 'package:logging/logging.dart';
@@ -15,6 +15,7 @@ import 'package:package_config/package_config.dart';
 
 import 'coverage.dart';
 import 'logging.dart';
+import 'platform.dart';
 import 'test_info.dart';
 import 'compiler.dart';
 import 'config.dart';
@@ -23,6 +24,14 @@ import 'resident.dart';
 import 'runner.dart';
 import 'web_runner.dart';
 import 'writer.dart';
+
+/// Select a reasonable number of shards to run tests on if it was not specified.
+///
+/// Assume that one test file represents a minimum amount of work to make another
+/// runner worth spinning up.
+int selectCores(Platform platform, List<Uri> tests) {
+  return math.max(math.min(tests.length, platform.numberOfProcessors - 1), 1);
+}
 
 void runApplication({
   @required bool verbose,
@@ -54,6 +63,10 @@ void runApplication({
   }
   if (!batchMode || debugger) {
     concurrency = 1;
+  }
+  if (concurrency == null) {
+    concurrency = selectCores(const LocalPlatform(), tests);
+    logger.log(Level.INFO, 'Selected $concurrency concurrency level');
   }
   var fileSystem = const LocalFileSystem();
   var packagesUri = fileSystem
