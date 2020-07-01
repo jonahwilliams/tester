@@ -10,7 +10,6 @@ import 'package:args/args.dart';
 import 'package:tester/src/config.dart';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
-import 'dart:developer';
 
 import 'application.dart';
 
