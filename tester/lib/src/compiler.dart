@@ -26,6 +26,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:developer';
 
+String currentTest = '';
+
 Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
   var libraryTests = testRegistry[libraryUri];
   if (libraryTests == null) {
@@ -35,6 +37,7 @@ Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
   if (testFunction == null) {
     throw Exception();
   }
+  currentTest = '\$libraryUri:\$name';
 
   var passed = false;
   var timeout = false;
@@ -68,10 +71,10 @@ main() async {
   var zone = Zone.current.fork(
     specification: ZoneSpecification(
       print: (self, parent, zone, line) {
-        log(line);
+        postEvent('message', {'line': line, 'test': currentTest});
       },
       handleUncaughtError: (self, parent, zone, error, stackTrace) {
-        log('UNHANDLED EXCEPTION: \$error\\n\$stackTrace\\n');
+        postEvent('message', {'line': 'UNHANDLED EXCEPTION: \$error\\n\$stackTrace\\n'});
       },
     ),
   );
@@ -200,7 +203,7 @@ Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
   }
 }
 
-main() async {
+main() {
   registerExtension('ext.callTest', (String request, Map<String, String> args) async {
     var test = args['test'];
     var library = args['library'];
