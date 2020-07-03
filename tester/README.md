@@ -48,7 +48,7 @@ a gradual migration or mixed codebase.
 
 ### Test Concurrency
 
-tester runs each test in serial. In batch mode, multiple runners can be configured using `--concurrency/-j`. Increasing this number above 1 (the default) will slow down startup times, but may be faster for large numbers of tests.
+tester runs each test in serial. In batch mode, multiple runners can be configured using `--concurrency/-j`.  The appropriate level of concurrency is automatically inferred based on the number of cores available and size of the given test suites.
 
 ```
 tester -j4
@@ -56,11 +56,13 @@ tester -j4
 
 ### Test Platforms
 
-The test platform (Dart VM, Flutter, Web, Flutter Web) can be configured using `--platform`. Web platforms require a chrome executable to be available.
+The test platform (Dart VM, Flutter, Web, Flutter Web) can be configured using `--platform`. Web platforms require a chrome executable to be available. Running code which uses `dart:ui` requires the use of either `flutter` or `flutter_web` platforms. Code which uses `dart:html`, `dart:js`, or other JavaScript interop libraries requires the use of `web` or `flutter_web` platforms. `dart:mirrors` is only supported on the `dart` platform.
 
 ```
 tester --platform=dart test/dart_test.dart
 tester --platform=flutter test/flutter_test.dart
+tester --platform=web test/flutter_test.dart
+tester --platform=flutter_web test/flutter_test.dart
 ```
 
 
