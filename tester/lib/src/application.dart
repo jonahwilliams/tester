@@ -132,8 +132,7 @@ void runApplication({
         );
         testIsolate = VmTestIsolate(
           testRunner: testRunner,
-          // VM does not need an compile expression service
-          compileExpression: null,
+          compileExpression: compiler.compileExpression,
           logger: logger,
         );
         break;
