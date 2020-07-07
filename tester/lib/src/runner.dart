@@ -8,7 +8,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
 
 /// The test runner manages the lifecycle of the platform under test.
 abstract class TestRunner {
