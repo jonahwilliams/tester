@@ -1,5 +1,5 @@
 name: tester
-version: 0.0.2-dev5
+version: 0.0.2-dev6
 repository: https://github.com/jonahwilliams/tester
 homepage: https://github.com/jonahwilliams/tester
 description: An experimental test runner for Dart & Flutter, designed for iterative workflows.
