@@ -210,12 +210,7 @@ class ChromeTestRunner extends TestRunner implements AssetReader {
     return measureCommand(() async {
       await for (var connection in _dwds.connectedApps) {
         connection.runMain();
-        DebugConnection debugConnection;
-        try {
-          debugConnection = await _dwds.debugConnection(connection);
-        } on AppConnectionException {
-          continue;
-        }
+        var debugConnection = await _dwds.debugConnection(connection);
         vmService = debugConnection.vmService;
         return RunnerStartResult(
           isolateName: '',
