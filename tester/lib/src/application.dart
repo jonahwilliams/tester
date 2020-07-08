@@ -54,6 +54,7 @@ void runApplication({
   @required bool headless,
   @required bool compileOnly,
   @required bool runOnly,
+  @required bool noDebug
 }) async {
   var logger = Logger('tool');
   if (verbose) {
@@ -91,6 +92,7 @@ void runApplication({
     packagesRootPath: packagesRootPath,
     testCompatMode: testCompatMode,
     packagesUri: packagesUri,
+    noDebug: noDebug,
   );
   var infoProvider = TestInformationProvider(
     testCompatMode: testCompatMode,
@@ -154,7 +156,7 @@ void runApplication({
           requireJS: File(config.requireJS),
           config: config,
           packagesRootPath: packagesRootPath,
-          headless: false,
+          headless: headless,
           packageConfig: packageConfig,
           expressionCompiler: compiler,
           logger: logger,
@@ -165,20 +167,35 @@ void runApplication({
         );
         break;
       case TargetPlatform.flutterWeb:
-        var testRunner = ChromeTestRunner(
-          dartSdkFile: File(config.flutterWebDartSdk),
-          dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
-          stackTraceMapper: File(config.stackTraceMapper),
-          requireJS: File(config.requireJS),
-          packagesRootPath: packagesRootPath,
-          config: config,
-          headless: false,
-          packageConfig: packageConfig,
-          expressionCompiler: compiler,
-          logger: logger,
-        );
+        WebTestRunner runner;
+        if (noDebug) {
+          runner = ChromeNoDebugTestRunner(
+            dartSdkFile: File(config.flutterWebDartSdk),
+            dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
+            stackTraceMapper: File(config.stackTraceMapper),
+            requireJS: File(config.requireJS),
+            config: config,
+            packagesRootPath: packagesRootPath,
+            headless: headless,
+            packageConfig: packageConfig,
+            logger: logger,
+          );
+        } else {
+          runner = ChromeTestRunner(
+            dartSdkFile: File(config.flutterWebDartSdk),
+            dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
+            stackTraceMapper: File(config.stackTraceMapper),
+            requireJS: File(config.requireJS),
+            packagesRootPath: packagesRootPath,
+            config: config,
+            headless: headless,
+            packageConfig: packageConfig,
+            expressionCompiler: compiler,
+            logger: logger,
+          );
+        }
         testIsolate = WebTestIsolate(
-          testRunner: testRunner,
+          testRunner: runner,
           logger: logger,
         );
         break;
@@ -201,6 +218,18 @@ void runApplication({
     ci: ci,
     testCount: testInfos.testCount * times,
   );
+
+  if (noDebug) {
+    writer.writeHeader();
+    var completer = Completer<void>();
+    (testIsolates.single as WebTestIsolate).nonDebugTests.listen((TestResult testResult) {
+      writer.writeTest(testResult, null);
+    }, onDone: completer.complete);
+    await completer.future;
+    writer.writeSummary();
+    await testIsolates.single.dispose();
+    exit(writer.exitCode);
+  }
 
   var random = math.Random(randomSeed);
   if (batchMode) {

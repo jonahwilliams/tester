@@ -158,6 +158,76 @@ main() async {
 
 ''';
 
+
+String generateFlutterWebNoDebugTestMain(int timeout, bool testCompatMode) =>
+    '''
+import 'dart:html';
+import 'dart:convert';
+import 'dart:async';
+import 'dart:developer';
+import 'dart:ui' as ui;
+
+Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
+  var libraryTests = testRegistry[libraryUri];
+  if (libraryTests == null) {
+     throw Exception();
+  }
+  var testFunction = libraryTests[name];
+  if (testFunction == null) {
+    throw Exception();
+  }
+
+  var passed = false;
+  var timeout = false;
+  dynamic error;
+  dynamic stackTrace;
+  try {
+''' +
+    ((timeout == -1)
+        ? 'await Future(() => testFunction());'
+        : 'await Future(() => testFunction()).timeout(const Duration(seconds: $timeout));') +
+    '''
+    await Future(() => testFunction());
+    passed = true;
+  } catch (err, st) {
+    error = err;
+    stackTrace = st;
+    if (err is TimeoutException) {
+      timeout = true;
+    }
+  } finally {
+    return {
+      'test': name,
+      'passed': passed,
+      'timeout': timeout,
+      'error': error.toString(),
+      'stackTrace': stackTrace.toString(),
+      'library': libraryUri,
+    };
+  }
+}
+
+main() async {
+  ui.debugEmulateFlutterTesterEnvironment = true;
+  await ui.webOnlyInitializePlatform();
+  (ui.window as dynamic).debugOverrideDevicePixelRatio(3.0);
+  (ui.window as dynamic).webOnlyDebugPhysicalSizeOverride = const ui.Size(2400, 1800);
+
+  for (String library in testRegistry.keys) {
+    for (String test in testRegistry[library].keys) {
+      final result = await executeTest(test, library);
+      HttpRequest()
+        ..open('POST', 'test-results')
+        ..send(json.encode(result));
+    }
+  }
+  HttpRequest()
+    ..open('POST', 'test-done')
+    ..send('');
+}
+
+''';
+
 String generateWebTestMain(int timeout, bool testCompatMode) =>
     '''
 import 'dart:convert';
@@ -402,6 +472,7 @@ class Compiler implements ExpressionCompiler {
     @required this.packagesRootPath,
     @required this.packagesUri,
     @required PackageConfig packageConfig,
+    @required this.noDebug,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
@@ -419,6 +490,7 @@ class Compiler implements ExpressionCompiler {
   final String workspacePath;
   final String packagesRootPath;
   final Uri packagesUri;
+  final bool noDebug;
 
   List<Uri> _dependencies;
   DateTime _lastCompiledTime;
@@ -612,10 +684,17 @@ class Compiler implements ExpressionCompiler {
         ));
         break;
       case TargetPlatform.flutterWeb:
-        contents.write(generateFlutterWebTestMain(
-          timeout,
-          testCompatMode,
-        ));
+        if (noDebug) {
+          contents.write(generateFlutterWebNoDebugTestMain(
+            timeout,
+            testCompatMode,
+          ));
+        } else {
+          contents.write(generateFlutterWebTestMain(
+            timeout,
+            testCompatMode,
+          ));
+        }
         break;
     }
     if (testCompatMode) {
