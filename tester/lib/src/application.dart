@@ -33,28 +33,28 @@ int selectCores(Platform platform, List<Uri> tests) {
   return math.max(math.min(tests.length, platform.numberOfProcessors - 1), 1);
 }
 
-void runApplication({
-  @required bool verbose,
-  @required bool batchMode,
-  @required bool ci,
-  @required Config config,
-  @required String coverageOutputPath,
-  @required String appName,
-  @required int timeout,
-  @required int concurrency,
-  @required List<String> enabledExperiments,
-  @required bool soundNullSafety,
-  @required bool debugger,
-  @required TargetPlatform targetPlatform,
-  @required List<Uri> tests,
-  @required String packagesRootPath,
-  @required String workspacePath,
-  @required int times,
-  @required int randomSeed,
-  @required bool headless,
-  @required bool compileOnly,
-  @required bool runOnly,
-}) async {
+void runApplication(
+    {@required bool verbose,
+    @required bool batchMode,
+    @required bool ci,
+    @required Config config,
+    @required String coverageOutputPath,
+    @required String appName,
+    @required int timeout,
+    @required int concurrency,
+    @required List<String> enabledExperiments,
+    @required bool soundNullSafety,
+    @required bool debugger,
+    @required TargetPlatform targetPlatform,
+    @required List<Uri> tests,
+    @required String packagesRootPath,
+    @required String workspacePath,
+    @required int times,
+    @required int randomSeed,
+    @required bool headless,
+    @required bool compileOnly,
+    @required bool runOnly,
+    @required bool noDebug}) async {
   var logger = Logger('tool');
   if (verbose) {
     logger.onRecord.listen((record) {
@@ -91,6 +91,7 @@ void runApplication({
     packagesRootPath: packagesRootPath,
     testCompatMode: testCompatMode,
     packagesUri: packagesUri,
+    noDebug: noDebug,
   );
   var infoProvider = TestInformationProvider(
     testCompatMode: testCompatMode,
@@ -154,7 +155,7 @@ void runApplication({
           requireJS: File(config.requireJS),
           config: config,
           packagesRootPath: packagesRootPath,
-          headless: false,
+          headless: headless,
           packageConfig: packageConfig,
           expressionCompiler: compiler,
           logger: logger,
@@ -165,20 +166,35 @@ void runApplication({
         );
         break;
       case TargetPlatform.flutterWeb:
-        var testRunner = ChromeTestRunner(
-          dartSdkFile: File(config.flutterWebDartSdk),
-          dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
-          stackTraceMapper: File(config.stackTraceMapper),
-          requireJS: File(config.requireJS),
-          packagesRootPath: packagesRootPath,
-          config: config,
-          headless: false,
-          packageConfig: packageConfig,
-          expressionCompiler: compiler,
-          logger: logger,
-        );
+        WebTestRunner runner;
+        if (noDebug) {
+          runner = ChromeNoDebugTestRunner(
+            dartSdkFile: File(config.flutterWebDartSdk),
+            dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
+            stackTraceMapper: File(config.stackTraceMapper),
+            requireJS: File(config.requireJS),
+            config: config,
+            packagesRootPath: packagesRootPath,
+            headless: headless,
+            packageConfig: packageConfig,
+            logger: logger,
+          );
+        } else {
+          runner = ChromeTestRunner(
+            dartSdkFile: File(config.flutterWebDartSdk),
+            dartSdkSourcemap: File(config.flutterWebDartSdkSourcemaps),
+            stackTraceMapper: File(config.stackTraceMapper),
+            requireJS: File(config.requireJS),
+            packagesRootPath: packagesRootPath,
+            config: config,
+            headless: headless,
+            packageConfig: packageConfig,
+            expressionCompiler: compiler,
+            logger: logger,
+          );
+        }
         testIsolate = WebTestIsolate(
-          testRunner: testRunner,
+          testRunner: runner,
           logger: logger,
         );
         break;

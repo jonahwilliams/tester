@@ -206,7 +206,7 @@ class WebTestIsolate extends TestIsolate {
     @required this.logger,
   });
 
-  final ChromeTestRunner testRunner;
+  final WebTestRunner testRunner;
   final Logger logger;
   VmService _vmService;
   IsolateRef _testIsolateRef;
@@ -220,8 +220,11 @@ class WebTestIsolate extends TestIsolate {
     testRunner.updateCode(codeFile, manifestFile, sourceMapFile);
 
     var runnerStartResult = await testRunner.start(entrypoint, onExit);
+    if (testRunner is! ChromeTestRunner) {
+      return;
+    }
     vmServiceAddress = runnerStartResult.serviceUri;
-    _vmService = testRunner.vmService;
+    _vmService = (testRunner as ChromeTestRunner).vmService;
     var vm = await _vmService.getVM();
     _testIsolateRef = vm.isolates.first;
     await measureCommand(
@@ -266,6 +269,9 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   Future<TestResult> runTest(TestInfo testInfo) async {
+    if (testRunner is ChromeNoDebugTestRunner) {
+      return (testRunner as ChromeNoDebugTestRunner).runTest(testInfo);
+    }
     Map<String, Object> result;
     try {
       result = (await _vmService.callServiceExtension(
@@ -316,7 +322,7 @@ class TestResult {
   factory TestResult.fromMessage(
       Map<dynamic, dynamic> message, Uri testFileUri) {
     return TestResult(
-      testFileUri: testFileUri,
+      testFileUri: testFileUri ?? Uri.parse(message['library'] as String),
       testName: message['test'] as String,
       passed: message['passed'] as bool,
       timeout: message['timeout'] as bool,
