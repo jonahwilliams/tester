@@ -211,8 +211,6 @@ class WebTestIsolate extends TestIsolate {
   VmService _vmService;
   IsolateRef _testIsolateRef;
 
-  Stream<TestResult> get nonDebugTests => (testRunner as ChromeNoDebugTestRunner).testResults;
-
   @override
   Future<void> start(Uri entrypoint, void Function() onExit) async {
     var codeFile = File(entrypoint.toFilePath() + '.sources');
@@ -271,6 +269,9 @@ class WebTestIsolate extends TestIsolate {
 
   @override
   Future<TestResult> runTest(TestInfo testInfo) async {
+    if (testRunner is ChromeNoDebugTestRunner) {
+      return (testRunner as ChromeNoDebugTestRunner).runTest(testInfo);
+    }
     Map<String, Object> result;
     try {
       result = (await _vmService.callServiceExtension(

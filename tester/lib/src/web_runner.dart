@@ -22,6 +22,7 @@ import 'package:webkit_inspection_protocol/webkit_inspection_protocol.dart';
 import 'config.dart';
 import 'logging.dart';
 import 'runner.dart';
+import 'test_info.dart';
 
 /// The expected executable name on linux.
 const String kLinuxExecutable = 'google-chrome';
@@ -31,8 +32,7 @@ const String kMacOSExecutable =
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 /// The expected Chrome executable name on Windows.
-const String kWindowsExecutable =
-    r'Google\Chrome\Application\chrome.exe';
+const String kWindowsExecutable = r'Google\Chrome\Application\chrome.exe';
 
 const String _kDefaultIndex = '''
 <html>
@@ -261,6 +261,7 @@ class ChromeTestRunner extends WebTestRunner implements AssetReader {
         '--no-default-browser-check',
         '--disable-default-apps',
         '--disable-translate',
+        '--disable-web-security',
         if (headless) ...<String>[
           '--headless',
           '--disable-gpu',
@@ -368,6 +369,8 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
   Process _chromeProcess;
   Directory _chromeTempProfile;
   HttpServer _httpServer;
+  ChromeConnection _chromeConnection;
+  WipConnection _wipConnection;
 
   final Config config;
   final File dartSdkFile;
@@ -378,6 +381,7 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
   final bool headless;
   final PackageConfig packageConfig;
   final Logger logger;
+  final _loading = Completer<void>();
 
   @override
   FutureOr<void> dispose() async {
@@ -392,13 +396,32 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
     }
   }
 
-  final _resultController = StreamController<TestResult>();
-
-  Stream<TestResult> get testResults => _resultController.stream;
+  Future<TestResult> runTest(TestInfo testInfo) async {
+    await _loading.future;
+    var response = await _wipConnection.debugger
+        .sendCommand('Runtime.evaluate', params: <String, Object>{
+      'expression':
+          'window["\$dartRunTest"]("${testInfo.testFileUri}::${testInfo.name}");',
+      'returnByValue': true,
+      'awaitPromise': true,
+    });
+    await _wipConnection.debugger
+        .sendCommand('Runtime.evaluate', params: <String, Object>{
+      'expression': 'window["\$dartTestHotRestart"]()',
+      'awaitPromise': true,
+    });
+    return TestResult.fromMessage(
+      json.decode(response.json['result']['result']['value'] as String)
+          as Map<String, Object>,
+      testInfo.testFileUri,
+    );
+  }
 
   @override
   FutureOr<RunnerStartResult> start(
-      Uri entrypoint, void Function() onExit) async {
+    Uri entrypoint,
+    void Function() onExit,
+  ) async {
     files['dart_sdk.js'] = dartSdkFile.readAsBytesSync();
     files['dart_sdk.js.map'] = dartSdkSourcemap.readAsBytesSync();
     files['require.js'] = requireJS.readAsBytesSync();
@@ -413,40 +436,40 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
 
     var serverPort = await findFreePort();
     _httpServer = await HttpServer.bind('localhost', serverPort);
-    var cascade = shelf.Cascade().add(
-      (shelf.Request request) async {
-        if (request.url.path == '') {
-          return shelf.Response.ok(_kDefaultIndex, headers: <String, String>{
-            HttpHeaders.contentTypeHeader: 'text/html',
-          });
-        }
-        if (request.url.path == 'test-results') {
-          var result = json.decode(await request.read().transform(utf8.decoder).join(''))
-            as Map<String, Object>;
-          _resultController.add(TestResult.fromMessage(result, null));
+    var cascade = shelf.Cascade().add((shelf.Request request) async {
+      if (request.url.path == 'done-loading') {
+        if (_loading.isCompleted) {
           return shelf.Response.ok('');
         }
-        if (request.url.path == 'test-done') {
-          _resultController.close();
-          return shelf.Response.ok('');
-        }
-        var path = request.url.path;
-        var bytes = files[path];
-        if (bytes != null) {
-          return shelf.Response.ok(bytes, headers: <String, String>{
-            if (path.endsWith('.js'))
-              HttpHeaders.contentTypeHeader: 'text/javascript',
-          });
-        }
-        bytes = files[path.replaceFirst('.js', '.lib.js')];
-        if (bytes != null) {
-          return shelf.Response.ok(bytes, headers: <String, String>{
-            HttpHeaders.contentTypeHeader: 'text/javascript',
-          });
-        }
-        return shelf.Response.notFound('');
+        var chromeTab =
+            (await _chromeConnection.getTabs()).firstWhere((ChromeTab tab) {
+          return !tab.isBackgroundPage && !tab.isChromeExtension;
+        });
+        _wipConnection = await chromeTab.connect();
+        _loading.complete();
+        return shelf.Response.ok('');
       }
-    );
+      if (request.url.path == '') {
+        return shelf.Response.ok(_kDefaultIndex, headers: <String, String>{
+          HttpHeaders.contentTypeHeader: 'text/html',
+        });
+      }
+      var path = request.url.path;
+      var bytes = files[path];
+      if (bytes != null) {
+        return shelf.Response.ok(bytes, headers: <String, String>{
+          if (path.endsWith('.js'))
+            HttpHeaders.contentTypeHeader: 'text/javascript',
+        });
+      }
+      bytes = files[path.replaceFirst('.js', '.lib.js')];
+      if (bytes != null) {
+        return shelf.Response.ok(bytes, headers: <String, String>{
+          HttpHeaders.contentTypeHeader: 'text/javascript',
+        });
+      }
+      return shelf.Response.ok('{}');
+    });
     shelf.serveRequests(_httpServer, cascade.handler);
 
     var port = await findFreePort();
@@ -459,17 +482,6 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
         // allowing for the remote debug port to be enabled.
         '--user-data-dir=${_chromeTempProfile.path}',
         '--remote-debugging-port=${port}',
-        // When the DevTools has focus we don't want to slow down the application.
-        '--disable-background-timer-throttling',
-        // Since we are using a temp profile, disable features that slow the
-        // Chrome launch.
-        '--disable-extensions',
-        '--disable-popup-blocking',
-        '--bwsi',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-default-apps',
-        '--disable-translate',
         if (headless) ...<String>[
           '--headless',
           '--disable-gpu',
@@ -481,6 +493,7 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
       'start_chrome',
       logger,
     );
+    _chromeConnection = ChromeConnection('localhost', port);
 
     return RunnerStartResult(
       isolateName: '',
@@ -583,8 +596,17 @@ define("main_module.bootstrap", ["$entrypoint", "dart_sdk"], function(app, dart_
   child.main = app[Object.keys(app)[0]].main;
   /* MAIN_EXTENSION_MARKER */
   child.main();
+  window.\$mainEntrypoint = child.main;
   window.\$dartLoader = {};
   window.\$dartLoader.rootDirectories = [];
+
+  window.\$dartTestHotRestart = function() {
+    dart_sdk.developer.invokeExtension("ext.flutter.disassemble", "{}").then((_) => {
+      dart_sdk.dart.hotRestart();
+      window.\$mainEntrypoint();
+    });
+  }
+
   if (window.\$requireLoader) {
     window.\$requireLoader.getModuleLibraries = dart_sdk.dart.getModuleLibraries;
     if (window.\$dartStackTraceUtility && !window.\$dartStackTraceUtility.ready) {

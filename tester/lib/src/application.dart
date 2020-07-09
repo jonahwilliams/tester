@@ -33,29 +33,28 @@ int selectCores(Platform platform, List<Uri> tests) {
   return math.max(math.min(tests.length, platform.numberOfProcessors - 1), 1);
 }
 
-void runApplication({
-  @required bool verbose,
-  @required bool batchMode,
-  @required bool ci,
-  @required Config config,
-  @required String coverageOutputPath,
-  @required String appName,
-  @required int timeout,
-  @required int concurrency,
-  @required List<String> enabledExperiments,
-  @required bool soundNullSafety,
-  @required bool debugger,
-  @required TargetPlatform targetPlatform,
-  @required List<Uri> tests,
-  @required String packagesRootPath,
-  @required String workspacePath,
-  @required int times,
-  @required int randomSeed,
-  @required bool headless,
-  @required bool compileOnly,
-  @required bool runOnly,
-  @required bool noDebug
-}) async {
+void runApplication(
+    {@required bool verbose,
+    @required bool batchMode,
+    @required bool ci,
+    @required Config config,
+    @required String coverageOutputPath,
+    @required String appName,
+    @required int timeout,
+    @required int concurrency,
+    @required List<String> enabledExperiments,
+    @required bool soundNullSafety,
+    @required bool debugger,
+    @required TargetPlatform targetPlatform,
+    @required List<Uri> tests,
+    @required String packagesRootPath,
+    @required String workspacePath,
+    @required int times,
+    @required int randomSeed,
+    @required bool headless,
+    @required bool compileOnly,
+    @required bool runOnly,
+    @required bool noDebug}) async {
   var logger = Logger('tool');
   if (verbose) {
     logger.onRecord.listen((record) {
@@ -218,18 +217,6 @@ void runApplication({
     ci: ci,
     testCount: testInfos.testCount * times,
   );
-
-  if (noDebug) {
-    writer.writeHeader();
-    var completer = Completer<void>();
-    (testIsolates.single as WebTestIsolate).nonDebugTests.listen((TestResult testResult) {
-      writer.writeTest(testResult, null);
-    }, onDone: completer.complete);
-    await completer.future;
-    writer.writeSummary();
-    await testIsolates.single.dispose();
-    exit(writer.exitCode);
-  }
 
   var random = math.Random(randomSeed);
   if (batchMode) {

@@ -158,7 +158,6 @@ main() async {
 
 ''';
 
-
 String generateFlutterWebNoDebugTestMain(int timeout, bool testCompatMode) =>
     '''
 import 'dart:html';
@@ -166,11 +165,13 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:developer';
 import 'dart:ui' as ui;
+import 'dart:js';
+import 'dart:js_util';
 
 Future<Map<String, dynamic>> executeTest(String name, String libraryUri) async {
   var libraryTests = testRegistry[libraryUri];
   if (libraryTests == null) {
-     throw Exception();
+    throw Exception();
   }
   var testFunction = libraryTests[name];
   if (testFunction == null) {
@@ -213,17 +214,14 @@ main() async {
   (ui.window as dynamic).debugOverrideDevicePixelRatio(3.0);
   (ui.window as dynamic).webOnlyDebugPhysicalSizeOverride = const ui.Size(2400, 1800);
 
-  for (String library in testRegistry.keys) {
-    for (String test in testRegistry[library].keys) {
-      final result = await executeTest(test, library);
-      HttpRequest()
-        ..open('POST', 'test-results')
-        ..send(json.encode(result));
-    }
-  }
-  HttpRequest()
-    ..open('POST', 'test-done')
-    ..send('');
+  setProperty(window, '\\\$dartRunTest', (String testInfo) async {
+    var parts = testInfo.split('::');
+    var library = parts[0];
+    var test = parts[1];
+    final result = await executeTest(test, library);
+    return json.encode(result);
+  });
+  HttpRequest.getString('done-loading');
 }
 
 ''';
@@ -472,7 +470,7 @@ class Compiler implements ExpressionCompiler {
     @required this.packagesRootPath,
     @required this.packagesUri,
     @required PackageConfig packageConfig,
-    @required this.noDebug,
+    this.noDebug = false,
     this.fileSystem = const LocalFileSystem(),
     this.processManager = const LocalProcessManager(),
     this.platform = const LocalPlatform(),
