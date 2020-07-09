@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:isolate' as isolate;
 
 import 'package:logging/logging.dart';
 import 'package:package_config/package_config_types.dart';
@@ -404,11 +405,7 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
           'window["\$dartRunTest"]("${testInfo.testFileUri}::${testInfo.name}");',
       'returnByValue': true,
       'awaitPromise': true,
-    });
-    await _wipConnection.debugger
-        .sendCommand('Runtime.evaluate', params: <String, Object>{
-      'expression': 'window["\$dartTestHotRestart"]()',
-      'awaitPromise': true,
+      'timeout': 600000,
     });
     return TestResult.fromMessage(
       json.decode(response.json['result']['result']['value'] as String)
@@ -446,6 +443,10 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
           return !tab.isBackgroundPage && !tab.isChromeExtension;
         });
         _wipConnection = await chromeTab.connect();
+        await _wipConnection.log.enable();
+        await _wipConnection.log.onEntryAdded.listen((m) {
+          print(m.text);
+        });
         _loading.complete();
         return shelf.Response.ok('');
       }
@@ -468,7 +469,19 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
           HttpHeaders.contentTypeHeader: 'text/javascript',
         });
       }
-      return shelf.Response.ok('{}');
+      bytes = sourcemaps['/' + path] ?? sourcemaps[path];
+      if (bytes != null) {
+        return shelf.Response.ok(bytes);
+      }
+      if (path == 'packages/ui/assets/ahem.ttf') {
+        var uri = await isolate.Isolate.resolvePackageUri(
+            Uri.parse('package:tester/assets/Ahem.ttf'));
+        return shelf.Response.ok(File.fromUri(uri).readAsBytesSync(),
+            headers: <String, String>{
+              HttpHeaders.contentTypeHeader: 'application/x-font-ttf'
+            });
+      }
+      return shelf.Response.notFound('');
     });
     shelf.serveRequests(_httpServer, cascade.handler);
 
@@ -482,6 +495,17 @@ class ChromeNoDebugTestRunner extends WebTestRunner {
         // allowing for the remote debug port to be enabled.
         '--user-data-dir=${_chromeTempProfile.path}',
         '--remote-debugging-port=${port}',
+        '--disable-background-timer-throttling',
+        // Since we are using a temp profile, disable features that slow the
+        // Chrome launch.
+        '--disable-extensions',
+        '--disable-popup-blocking',
+        '--bwsi',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-default-apps',
+        '--disable-translate',
+        '--disable-web-security',
         if (headless) ...<String>[
           '--headless',
           '--disable-gpu',
@@ -600,16 +624,11 @@ define("main_module.bootstrap", ["$entrypoint", "dart_sdk"], function(app, dart_
   window.\$dartLoader = {};
   window.\$dartLoader.rootDirectories = [];
 
-  window.\$dartTestHotRestart = function() {
-    dart_sdk.developer.invokeExtension("ext.flutter.disassemble", "{}").then((_) => {
-      dart_sdk.dart.hotRestart();
-      window.\$mainEntrypoint();
-    });
-  }
-
   if (window.\$requireLoader) {
     window.\$requireLoader.getModuleLibraries = dart_sdk.dart.getModuleLibraries;
-    if (window.\$dartStackTraceUtility && !window.\$dartStackTraceUtility.ready) {
+  }
+  if (window.\$dartStackTraceUtility && !window.\$dartStackTraceUtility.ready) {
+    try {
       window.\$dartStackTraceUtility.ready = true;
       let dart = dart_sdk.dart;
       window.\$dartStackTraceUtility.setSourceMapProvider(function(url) {
@@ -621,6 +640,8 @@ define("main_module.bootstrap", ["$entrypoint", "dart_sdk"], function(app, dart_
         url = url.replace(".lib.js", "");
         return dart.getSourceMap(url);
       });
+    } catch (err) {
+      return null;
     }
   }
 });

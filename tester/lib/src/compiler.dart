@@ -307,16 +307,20 @@ Future<void> testCompat(FutureOr<void> Function() testFunction) async {
   var declarer = Declarer();
   var innerZone = Zone.current.fork(zoneValues: {#test.declarer: declarer});
   String errors;
-  await innerZone.run(() async {
-    await Invoker.guard<Future<void>>(() async {
-      final _Reporter reporter = _Reporter();
-      await testFunction();
-      final Group group = declarer.build();
-      final Suite suite = Suite(group, SuitePlatform(Runtime.vm));
-      await _runGroup(suite, group, <Group>[], reporter);
-      errors = reporter._onDone();
+  try {
+    await innerZone.run(() async {
+      await Invoker.guard<Future<void>>(() async {
+        final _Reporter reporter = _Reporter();
+        await testFunction();
+        final Group group = declarer.build();
+        final Suite suite = Suite(group, SuitePlatform(Runtime.vm));
+        await _runGroup(suite, group, <Group>[], reporter);
+        errors = reporter._onDone();
+      });
     });
-  });
+  } catch (err) {
+    throw Exception(err.toString());
+  }
   if (errors != null) {
     throw Exception(errors);
   }
