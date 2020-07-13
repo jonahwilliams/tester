@@ -58,6 +58,10 @@ class Config {
               ),
             )
             .uri,
+        flutterWebSdkSources: fileSystem.path.join(
+          flutterRoot,
+          'bin/cache/flutter_web_sdk/',
+        ),
         flutterWebDartSdk: fileSystem.path.join(
           flutterRoot,
           'bin/cache/flutter_web_sdk/kernel/amd/dart_sdk.js',
@@ -112,6 +116,7 @@ class Config {
       flutterWebPlatformDillUri: null,
       flutterWebDartSdk: null,
       flutterWebDartSdkSourcemaps: null,
+      flutterWebSdkSources: null,
       dartWebPlatformDillUri: fileSystem
           .file(fileSystem.path.join(
             dartSdkPath,
@@ -152,7 +157,11 @@ class Config {
     @required this.stackTraceMapper,
     @required this.requireJS,
     @required this.dartWebPlatformDillUri,
+    @required this.flutterWebSdkSources,
   });
+
+  /// The root of the flutter web sdk source code.
+  final String flutterWebSdkSources;
 
   /// The file path to the dart executable.
   final String dartPath;
