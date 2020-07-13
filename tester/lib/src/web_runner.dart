@@ -220,7 +220,7 @@ class ChromeTestRunner extends WebTestRunner implements AssetReader {
         },
         expressionCompiler: expressionCompiler,
         serveDevTools: false,
-        enableDebugging: false,
+        enableDebugging: true,
         useSseForDebugProxy: false,
         loadStrategy: RequireStrategy(
           ReloadConfiguration.none,
