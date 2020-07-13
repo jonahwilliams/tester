@@ -84,7 +84,7 @@ final argParser = ArgParser()
         'on each run.',
   )
   ..addFlag('headless',
-      defaultsTo: true,
+      defaultsTo: false,
       help: 'Whether to run the tester/browser in headless mode.')
   ..addFlag('run-only', hide: true)
   ..addFlag('compile-only', hide: true)

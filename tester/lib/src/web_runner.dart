@@ -220,7 +220,7 @@ class ChromeTestRunner extends WebTestRunner implements AssetReader {
         },
         expressionCompiler: expressionCompiler,
         serveDevTools: false,
-        enableDebugging: false,
+        enableDebugging: true,
         useSseForDebugProxy: false,
         loadStrategy: RequireStrategy(
           ReloadConfiguration.none,
@@ -291,13 +291,9 @@ class ChromeTestRunner extends WebTestRunner implements AssetReader {
     }, 'dwds_connect', logger);
   }
 
-  @override
-  Future<String> dartSourceContents(String serverPath) async {
-    if (!serverPath.endsWith('.dart')) return null;
-    var workspaceFile = File(path.join(packagesRootPath, serverPath));
-    if (workspaceFile.existsSync()) {
-      return workspaceFile.readAsStringSync();
-    }
+  final uriContext = path.Context(style: path.Style.url);
+
+  String _readPackageFile(String serverPath) {
     var segments = Uri.parse(serverPath).pathSegments;
     if (segments.first == 'packages' && segments.length > 2) {
       var packageName = segments[1];
@@ -314,6 +310,46 @@ class ChromeTestRunner extends WebTestRunner implements AssetReader {
       return File(
               path.join(packagesRootPath, '.dart_tool', 'tester', 'main.dart'))
           .readAsStringSync();
+    }
+    return null;
+  }
+
+  String _readEngineFile(String serverPath) {
+    if (!serverPath.contains('cache/builder/src/out')) {
+      return null;
+    }
+    var segments = uriContext
+        .split(serverPath)
+        .skipWhile((String segment) => segment != 'flutter_web_sdk')
+        .skip(1);
+    if (segments.isEmpty) {
+      return null;
+    }
+    var contents =
+        File(path.joinAll([config.flutterWebSdkSources, ...segments]));
+    if (contents.existsSync()) {
+      return contents.readAsStringSync();
+    }
+    return null;
+  }
+
+  @override
+  Future<String> dartSourceContents(String serverPath) async {
+    if (!serverPath.endsWith('.dart')) return null;
+    var workspaceFile = File(path.joinAll([
+      packagesRootPath,
+      ...uriContext.split(serverPath),
+    ]));
+    if (workspaceFile.existsSync()) {
+      return workspaceFile.readAsStringSync();
+    }
+    var result = _readPackageFile(serverPath);
+    if (result != null) {
+      return result;
+    }
+    result = _readEngineFile(serverPath);
+    if (result != null) {
+      return result;
     }
     return null;
   }
@@ -345,6 +381,34 @@ class ChromeTestRunner extends WebTestRunner implements AssetReader {
       headers[HttpHeaders.contentTypeHeader] = 'application/javascript';
       return shelf.Response.ok(bytes, headers: headers);
     }
+
+    var bytes = sourcemaps['/' + requestPath] ?? sourcemaps[requestPath];
+    if (bytes != null) {
+      return shelf.Response.ok(bytes);
+    }
+
+    var result = _readPackageFile(requestPath);
+    if (result != null) {
+      return shelf.Response.ok(result);
+    }
+
+    if (request.url.path == 'packages/ui/assets/ahem.ttf') {
+      var uri = await isolate.Isolate.resolvePackageUri(
+          Uri.parse('package:tester/assets/Ahem.ttf'));
+      return shelf.Response.ok(
+        File.fromUri(uri).readAsBytesSync(),
+        headers: <String, String>{
+          HttpHeaders.contentTypeHeader: 'application/x-font-ttf'
+        },
+      );
+    }
+    result = _readEngineFile(requestPath);
+    if (result != null) {
+      return shelf.Response.ok(result);
+    }
+
+    print('found nothing main request for ${request.url}}');
+
     return shelf.Response.notFound('');
   }
 

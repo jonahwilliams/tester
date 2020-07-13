@@ -1,5 +1,5 @@
 name: tester
-version: 0.0.2-dev8
+version: 0.0.3-dev1
 repository: https://github.com/jonahwilliams/tester
 homepage: https://github.com/jonahwilliams/tester
 description: An experimental test runner for Dart & Flutter, designed for iterative workflows.
@@ -11,7 +11,7 @@ executables:
   tester: tester
 
 dependencies:
-  meta: '^1.2.1'
+  meta: 1.2.2
   yaml: '>=2.2.1 <2.2.2'
   coverage: '>=0.14.0 <0.14.1'
   shelf: '>=0.7.7 <0.7.8'
