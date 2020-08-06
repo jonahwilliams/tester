@@ -21,7 +21,7 @@ packages:
       name: async
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2"
   browser_launcher:
     dependency: transitive
     description:
@@ -112,7 +112,7 @@ packages:
       name: dwds
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.0"
+    version: "5.1.0"
   expect:
     dependency: "direct dev"
     description:
@@ -147,7 +147,7 @@ packages:
       name: http
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.1"
+    version: "0.12.2"
   http_multi_server:
     dependency: transitive
     description:
@@ -182,7 +182,7 @@ packages:
       name: matcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.8"
+    version: "0.12.9"
   meta:
     dependency: "direct main"
     description:
@@ -212,12 +212,12 @@ packages:
     source: hosted
     version: "1.7.0"
   pedantic:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: pedantic
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.0"
+    version: "1.9.2"
   platform:
     dependency: transitive
     description:
@@ -308,7 +308,7 @@ packages:
       name: stack_trace
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.3"
+    version: "1.9.5"
   stream_channel:
     dependency: transitive
     description:
@@ -357,7 +357,7 @@ packages:
       name: uuid
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.2.0"
   vm_service:
     dependency: "direct main"
     description:
@@ -392,7 +392,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.6"
+    version: "1.6.9"
   yaml:
     dependency: "direct main"
     description:
@@ -401,4 +401,4 @@ packages:
     source: hosted
     version: "2.2.1"
 sdks:
-  dart: ">=2.9.0-17.0.dev <3.0.0"
+  dart: ">=2.9.0 <3.0.0"

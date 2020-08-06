@@ -75,6 +75,7 @@ Future<void> testDartVmCompile() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());
@@ -136,6 +137,7 @@ Future<void> testFlutterCompile() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());
@@ -197,6 +199,7 @@ Future<void> testDartWebCompile() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());
@@ -260,6 +263,7 @@ Future<void> testFlutterWebCompile() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());
@@ -326,6 +330,7 @@ Future<void> testDartVmCompileWithExperiments() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());
@@ -387,6 +392,7 @@ Future<void> testDartVmCompileWithNullSafety() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());
@@ -448,6 +454,7 @@ Future<void> testDartVmCompileWithDisableNullSafety() async {
     workspacePath: '/project',
     packageConfig: PackageConfig.empty,
     packagesUri: Uri.file('/project/.packages'),
+    noDebug: false,
   );
 
   var uri = await compiler.start(TestInfos());

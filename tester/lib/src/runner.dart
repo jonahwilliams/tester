@@ -8,7 +8,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
 
 /// The test runner manages the lifecycle of the platform under test.
 abstract class TestRunner {
@@ -44,12 +43,9 @@ Future<Uri> _pollForServiceFile(File file) async {
         return result;
       }
       await Future<void>.delayed(const Duration(milliseconds: 5));
-    } on FileSystemException {
+    } on Exception {
       // On Windows this can happen if the file is read at the same
       // time that the VM is writing it.
-    } on FormatException {
-      // This could happen if the file is read before the write
-      // has completed.
     } finally {
       if (current >= maxAttempts) {
         throw Exception('Failed to connect to Dart VM.');
@@ -104,11 +100,11 @@ class VmTestRunner implements TestRunner {
       '--write-service-info=${uniqueFile.path}',
       entrypoint.toString(),
     ]);
-    unawaited(_process.exitCode.whenComplete(() {
+    _process.exitCode.whenComplete(() {
       if (!_disposed) {
         onExit();
       }
-    }));
+    });
     _process.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
@@ -171,11 +167,11 @@ class FlutterTestRunner extends TestRunner {
     ], environment: <String, String>{
       'FLUTTER_TEST': 'true',
     });
-    unawaited(_process.exitCode.whenComplete(() {
+    _process.exitCode.whenComplete(() {
       if (!_disposed) {
         onExit();
       }
-    }));
+    });
     var serviceInfo = Completer<Uri>();
     StreamSubscription subscription;
     subscription = _process.stdout
