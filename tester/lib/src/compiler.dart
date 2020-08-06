@@ -830,7 +830,6 @@ class StdoutHandler {
     reset();
   }
 
-  bool compilerMessageReceived = false;
   final void Function(String) consumer;
   String boundaryKey;
   StdoutState state = StdoutState.CollectDiagnostic;
@@ -866,10 +865,6 @@ class StdoutHandler {
     }
     if (state == StdoutState.CollectDiagnostic) {
       if (!_suppressCompilerMessages) {
-        if (compilerMessageReceived == false) {
-          consumer('\nCompiler message:');
-          compilerMessageReceived = true;
-        }
         consumer(message);
       }
     } else {
@@ -891,7 +886,6 @@ class StdoutHandler {
   void reset(
       {bool suppressCompilerMessages = false, bool expectSources = true}) {
     boundaryKey = null;
-    compilerMessageReceived = false;
     compilerOutput = Completer<CompilerOutput>();
     _suppressCompilerMessages = suppressCompilerMessages;
     _expectSources = expectSources;

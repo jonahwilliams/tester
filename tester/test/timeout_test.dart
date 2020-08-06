@@ -17,6 +17,6 @@ Future<void> testTimeoutConfigurationTimesout() async {
       <String>[tester, '--timeout=1', 'test/timeout_test.dart'],
       workingDirectory: '../test_project');
 
-  expect(result.exitCode, 1);
+  expect(result.exitCode, isNot(0));
   expect(result.stdout, contains('TimeoutException'));
 }
