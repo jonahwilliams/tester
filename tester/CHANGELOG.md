@@ -1,3 +1,3 @@
-v0.0.3-dev1
+v0.1.0
 
-* Pre-release version for initial testing
+* First release which allows a stable Dart version (2.9).
