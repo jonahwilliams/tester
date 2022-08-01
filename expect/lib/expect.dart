@@ -17,7 +17,7 @@ export 'package:matcher/matcher.dart';
 /// [equals] matcher.
 ///
 /// If the assertion fails a [String] is thrown.
-void expect(dynamic actual, dynamic matcher, {String reason}) {
+void expect(dynamic actual, dynamic matcher, {String? reason}) {
   var wrappedMatcher = wrapMatcher(matcher);
   var matchState = <dynamic, dynamic>{};
   try {
@@ -42,7 +42,7 @@ void expect(dynamic actual, dynamic matcher, {String reason}) {
 /// [equals] matcher.
 ///
 /// If the assertion fails a [String] is thrown.
-void throws(void Function() actual, dynamic matcher, {String reason}) {
+void throws(void Function() actual, dynamic matcher, {String? reason}) {
   var wrappedMatcher = wrapMatcher(matcher);
   var matchState = <dynamic, dynamic>{};
   dynamic error;
@@ -79,7 +79,7 @@ void throws(void Function() actual, dynamic matcher, {String reason}) {
 ///
 /// If the assertion fails a [String] is thrown.
 Future<void> throwsAsync(Future<void> Function() actual, dynamic matcher,
-    {String reason}) async {
+    {String? reason}) async {
   var wrappedMatcher = wrapMatcher(matcher);
   var matchState = <dynamic, dynamic>{};
   dynamic error;
@@ -101,7 +101,7 @@ Future<void> throwsAsync(Future<void> Function() actual, dynamic matcher,
 }
 
 String _errorMessage(
-    Matcher wrappedMatcher, dynamic actual, Map matchState, String reason) {
+    Matcher wrappedMatcher, dynamic actual, Map matchState, String? reason) {
   var mismatchDescription = StringDescription();
   wrappedMatcher.describeMismatch(
     actual,

@@ -119,7 +119,7 @@ packages:
       path: "../expect"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.0.3"
   ffi:
     dependency: transitive
     description:
@@ -182,7 +182,7 @@ packages:
       name: matcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.9"
+    version: "0.12.12"
   meta:
     dependency: "direct main"
     description:
@@ -210,7 +210,7 @@ packages:
       name: path
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.0"
+    version: "1.8.0"
   pedantic:
     dependency: transitive
     description:
@@ -308,7 +308,7 @@ packages:
       name: stack_trace
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.5"
+    version: "1.10.0"
   stream_channel:
     dependency: transitive
     description:
@@ -401,4 +401,4 @@ packages:
     source: hosted
     version: "2.2.1"
 sdks:
-  dart: ">=2.9.0 <3.0.0"
+  dart: ">=2.12.0 <3.0.0"

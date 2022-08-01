@@ -1,10 +1,10 @@
 name: expect
 description: A tiny expectation library for writing tests based on matcher and test.
-version: 0.0.2
+version: 0.0.3
 repository: https://github.com/jonahwilliams/tester
 
 environment:
-  sdk: '>=2.8.0 <3.0.0'
+  sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
-  matcher: ^0.12.8
+  matcher: ^0.12.12

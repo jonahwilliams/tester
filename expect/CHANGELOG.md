@@ -1,3 +1,7 @@
+0.0.3
+
+* Migrated to null safety.
+
 0.0.2
 
 * Added `throws` and `throwsAsync` to perform matches against exceptions thrown

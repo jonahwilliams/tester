@@ -17,13 +17,13 @@ dependencies:
   shelf: 0.7.7
   stream_transform: 1.2.0
   watcher: 0.9.7+15
-  stack_trace: 1.9.5
+  stack_trace: 1.10.0
   dart_console:  0.6.2
   vm_service: 4.1.0
   package_config: 1.9.3
   uuid: 2.2.0
   args: 1.6.0
-  path: 1.7.0
+  path: 1.8.0
   dwds: 5.1.0
   webkit_inspection_protocol: 0.7.3
   _fe_analyzer_shared: 4.0.0

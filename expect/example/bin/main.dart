@@ -6,7 +6,7 @@ import 'package:expect/expect.dart';
 
 void main() async {
   expect(2, greaterThan(1));
-  throws(() => Exception(), isA<Exception>());
+  throws(() => throw Exception(), isA<Exception>());
   await throwsAsync(() async {
     await null;
     throw Exception();
